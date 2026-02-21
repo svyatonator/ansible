@@ -1,0 +1,7 @@
+# Non-sensitive defaults for OpenClaw group
+openclaw_bind_localhost: true
+
+# Secrets should be set in ansible-vault file (see group_vars/openclaw_vault.yml)
+openclaw_gateway_token: ""
+openclaw_telegram_bot_token: ""
+opencode_api_key: ""

@@ -1,0 +1,10 @@
+[Unit]
+Description=Periodic OpenClaw backup timer
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec={{ openclaw_backup_interval_days }}d
+Persistent=true
+
+[Install]
+WantedBy=timers.target

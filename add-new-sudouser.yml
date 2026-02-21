@@ -1,0 +1,55 @@
+- name: Add new sudo user with SSH key
+  hosts: servers
+  gather_facts: true
+
+  tasks:
+    - name: Create user
+      ansible.builtin.user:
+        name: "{{ additional_user }}"
+        shell: /bin/bash
+        create_home: true
+        groups: sudo
+        append: true
+      become: true
+
+    - name: Check account status (passwd -S)
+      ansible.builtin.command: "passwd -S {{ additional_user }}"
+      register: passwd_status
+      changed_when: false
+      become: true
+
+    - name: Set random password hash to unlock account (SSH key only)
+      ansible.builtin.shell: |
+        usermod -p "$(openssl passwd -6 "$(openssl rand -base64 32)")" {{ additional_user }}
+      args:
+        executable: /bin/bash
+      changed_when: true
+      become: true
+      when: additional_user ~ ' L' in passwd_status.stdout
+
+    - name: Allow passwordless sudo for the user
+      ansible.builtin.copy:
+        dest: "/etc/sudoers.d/{{ additional_user }}"
+        content: "{{ additional_user }} ALL=(ALL) NOPASSWD:ALL\n"
+        owner: root
+        group: root
+        mode: "0440"
+      become: true
+
+    - name: Add public key for the user
+      ansible.builtin.authorized_key:
+        user: "{{ additional_user }}"
+        state: present
+        key: "{{ additional_user_pubkey }}"
+      become: true
+
+    - name: Verify authorized_keys created
+      ansible.builtin.stat:
+        path: "/home/{{ additional_user }}/.ssh/authorized_keys"
+      register: user_keys_file
+      become: true
+
+    - name: Print result
+      ansible.builtin.debug:
+        msg: "✓ User '{{ additional_user }}' created with SSH key"
+      when: user_keys_file.stat.exists

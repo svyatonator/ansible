@@ -1,0 +1,52 @@
+- name: Cleanup OpenClaw Docker stack and backups
+  hosts: openclaw
+  gather_facts: false
+  become: true
+
+  vars:
+    openclaw_root: /srv/openclaw
+    openclaw_backup_script: /usr/local/bin/backup-openclaw.sh
+    openclaw_restore_script: /usr/local/bin/restore-openclaw.sh
+    openclaw_cleanup_remove_docker_engine: false
+
+  tasks:
+    - name: Ensure raw execution temp directory exists
+      ansible.builtin.raw: install -d -m 0700 /dev/shm/ansible-tmp
+      changed_when: false
+
+    - name: Stop and disable OpenClaw backup timer and service
+      ansible.builtin.raw: |
+        set -eu
+        systemctl stop openclaw-backup.timer openclaw-backup.service || true
+        systemctl disable openclaw-backup.timer || true
+
+    - name: Stop and remove OpenClaw compose stack
+      ansible.builtin.raw: |
+        set -eu
+        if [ -f "{{ openclaw_root }}/docker-compose.yml" ]; then
+          cd "{{ openclaw_root }}"
+          docker compose down --remove-orphans
+        else
+          echo "Compose file is absent, skip docker compose down"
+        fi
+
+    - name: Remove OpenClaw units, helper scripts and root directory
+      ansible.builtin.raw: |
+        set -eu
+        rm -f /etc/systemd/system/openclaw-backup.timer
+        rm -f /etc/systemd/system/openclaw-backup.service
+        rm -f "{{ openclaw_backup_script }}"
+        rm -f "{{ openclaw_restore_script }}"
+        systemctl daemon-reload || true
+        rm -rf "{{ openclaw_root }}"
+
+    - name: Remove Docker packages and data (optional)
+      ansible.builtin.raw: |
+        set -eu
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || true
+        apt-get autoremove -y --purge || true
+        rm -f /etc/apt/sources.list.d/docker.list
+        rm -f /etc/apt/keyrings/docker.gpg
+        rm -rf /var/lib/docker /var/lib/containerd
+      when: openclaw_cleanup_remove_docker_engine | bool

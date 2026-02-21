@@ -1,0 +1,50 @@
+Первичная настройка нового хоста - добавить пользователя, вручную проверить ssh для пользователя (обычно slava), затем отключить доступ к руту по ssh. 
+
+    Вариант доступа через пароль
+    1 - Добавить хост в [bootstrap] в inventory.ini
+    2 - Запустить первый плейбук для создания пользователя и добавления ssh ключа
+    ansible-playbook bootstrap-1-ssh-password-to-root-add-sudouser -k
+    3 - Вручную зайти на хост по ssh ключу, проверить sudo -i
+    4 - Залочить рута вторым плейбуком
+    ansible-playbook bootstrap-2-remove-root-access.yml -k
+    5 - Убрать хост из [bootstrap] в inventory.ini
+
+    Вариант доступа через root ssh key
+    1 - Добавить хост в [bootstrap] в inventory.ini
+    2 - Проверить ключ рута на который ссылается group_vars/bootstrap.yml
+    3 - Запустить первый плейбук
+    ansible-playbook bootstrap-1-ssh-key-to-root-add-new-sudouser
+    4 - Вручную зайти на хост по ssh ключу, проверить sudo -i
+    5 - Залочить рута вторым плейбуком
+    ansible-playbook bootstrap-2-remove-root-access.yml -k
+    6 - Убрать хост из [bootstrap] в inventory.ini
+
+Добавления пользователя после первичной настройки
+
+    1 - добавить переменные в group_vars/all.yml
+    2 - Запустить плейбук с параментрами для конретных серверов добавится additional_user и его ключ
+    ansible-playbook add-new-sudouser.yml --limit u22-test-lxc,rif-u22-ger
+    или конкретный из additional_user, если их нексолько, или просто определить в командной строке
+    ansible-playbook add-new-sudouser.yml -e "additional_user=ivan" -e "additional_user_pubkey='ssh-ed25519 AAAA... ivan@host'" --limit u22-test-lxc,rif-u22-ger
+
+Просмотр лога команд sudo `ausearch -k commands -ua slava`
+
+
+
+
+--------//----------
+Просто инфа для доработки
+
+Альтернатива (если нужна автоматизация):
+Если всё же нужно запускать без интерактивного ввода, можно использовать Ansible Vault:
+bash# Создать зашифрованный файл с паролем
+ansible-vault create group_vars/secrets.yml
+
+# Внутри указать:
+cockpit_admin_password: "YourSecurePassword123!"
+
+# Запуск с расшифровкой:
+ansible-playbook -i inventory.ini setup-cockpit.yml --ask-vault-pass
+
+OpenClaw (backup/restore/SSH tunnel):
+см. файл OPENCLAW_OPERATIONS.md

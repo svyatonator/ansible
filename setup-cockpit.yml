@@ -1,0 +1,252 @@
+- name: Setup and configure Cockpit with 2FA
+  hosts: servers
+  gather_facts: true
+  become: true
+  vars:
+    cockpit_user: admin
+    cockpit_user_password: "{{ cockpit_admin_password }}"
+    cockpit_domain: "{{ cockpit_ssl_domain | default('') }}"
+  
+  vars_prompt:
+    - name: cockpit_admin_password
+      prompt: "Enter password for Cockpit user '{{ cockpit_user }}'"
+      private: true
+      confirm: true
+    
+    - name: cockpit_ssl_domain
+      prompt: "Enter domain for SSL certificate (e.g., volna.ovh) or leave empty for self-signed"
+      private: false
+      default: ""
+
+  tasks:
+    - name: Install Cockpit and required packages
+      ansible.builtin.apt:
+        name:
+          - cockpit
+          - cockpit-pcp          # Performance metrics
+          - cockpit-packagekit   # Package management
+          - cockpit-storaged     # Storage management
+          - cockpit-networkmanager  # Network management
+          - libpam-google-authenticator  # 2FA support
+        state: present
+        update_cache: true
+
+    - name: Create Cockpit admin user
+      ansible.builtin.user:
+        name: "{{ cockpit_user }}"
+        shell: /bin/bash
+        create_home: true
+        groups: sudo
+        append: true
+        password: "{{ cockpit_user_password | password_hash('sha512') }}"
+
+    - name: Get UID for Cockpit user
+      ansible.builtin.command: "id -u {{ cockpit_user }}"
+      register: cockpit_user_uid
+      changed_when: false
+
+    - name: Disable SSH access for Cockpit user (DenyUsers in sshd_config)
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^DenyUsers.*'
+        line: "DenyUsers {{ cockpit_user }}"
+        create: false
+      notify: Restart sshd
+
+    - name: Ensure Cockpit is enabled and started
+      ansible.builtin.service:
+        name: cockpit.socket
+        enabled: true
+        state: started
+
+    - name: Configure Cockpit - disable root login
+      ansible.builtin.lineinfile:
+        path: /etc/cockpit/disallowed-users
+        line: root
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Configure Cockpit - Origins (HTTPS only, no plain HTTP allowed)
+      ansible.builtin.copy:
+        dest: /etc/cockpit/cockpit.conf
+        content: |
+          [WebService]
+          # Принимать подключения только через HTTPS
+          AllowUnencrypted = false
+          # Порт по умолчанию 9090
+          {% if cockpit_domain %}
+          Origins = https://{{ cockpit_domain }}:9090 https://{{ ansible_host }}:9090
+          {% else %}
+          # Origins = https://your-server-ip:9090 https://your-domain.com:9090
+          {% endif %}
+          LoginTitle = Server Management Console
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart cockpit
+
+    - name: Check if Let's Encrypt certificate exists for domain
+      ansible.builtin.stat:
+        path: "/etc/letsencrypt/live/{{ cockpit_domain }}/fullchain.pem"
+      register: letsencrypt_cert
+      when: cockpit_domain | length > 0
+
+    - name: Create combined SSL certificate for Cockpit from Let's Encrypt
+      ansible.builtin.shell: |
+        cat /etc/letsencrypt/live/{{ cockpit_domain }}/fullchain.pem \
+            /etc/letsencrypt/live/{{ cockpit_domain }}/privkey.pem \
+            > /etc/cockpit/ws-certs.d/{{ cockpit_domain }}.cert
+      args:
+        executable: /bin/bash
+      when: 
+        - cockpit_domain | length > 0
+        - letsencrypt_cert.stat.exists
+      notify: Restart cockpit
+
+    - name: Set correct permissions on Cockpit SSL certificate
+      ansible.builtin.file:
+        path: "/etc/cockpit/ws-certs.d/{{ cockpit_domain }}.cert"
+        owner: root
+        group: cockpit-ws
+        mode: '0640'
+      when: 
+        - cockpit_domain | length > 0
+        - letsencrypt_cert.stat.exists
+
+    - name: Create certbot deploy hook for Cockpit SSL auto-renewal
+      ansible.builtin.copy:
+        dest: /etc/letsencrypt/renewal-hooks/deploy/cockpit.sh
+        content: |
+          #!/bin/bash
+          # Автоматическое обновление SSL сертификата для Cockpit
+          DOMAIN="{{ cockpit_domain }}"
+          
+          if [ -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
+              cat /etc/letsencrypt/live/$DOMAIN/fullchain.pem \
+                  /etc/letsencrypt/live/$DOMAIN/privkey.pem \
+                  > /etc/cockpit/ws-certs.d/$DOMAIN.cert
+              
+              chmod 640 /etc/cockpit/ws-certs.d/$DOMAIN.cert
+              chown root:cockpit-ws /etc/cockpit/ws-certs.d/$DOMAIN.cert
+              
+              systemctl restart cockpit.socket
+              echo "Cockpit SSL certificate updated for $DOMAIN"
+          fi
+        owner: root
+        group: root
+        mode: '0755'
+      when: 
+        - cockpit_domain | length > 0
+        - letsencrypt_cert.stat.exists
+
+    - name: Display SSL certificate status
+      ansible.builtin.debug:
+        msg: |
+          {% if cockpit_domain | length > 0 and letsencrypt_cert.stat.exists %}
+          ✓ SSL certificate configured for {{ cockpit_domain }}
+          ✓ Auto-renewal hook installed
+          Access Cockpit at: https://{{ cockpit_domain }}:9090
+          {% elif cockpit_domain | length > 0 %}
+          ⚠ Let's Encrypt certificate not found for {{ cockpit_domain }}
+          Using self-signed certificate. Access at: https://{{ ansible_host }}:9090
+          {% else %}
+          ⚠ No domain specified, using self-signed certificate
+          Access Cockpit at: https://{{ ansible_host }}:9090
+          {% endif %}
+      when: cockpit_domain is defined
+
+    - name: Create PAM configuration for Cockpit with 2FA
+      ansible.builtin.copy:
+        dest: /etc/pam.d/cockpit
+        content: |
+          # Cockpit PAM configuration with 2FA
+          # Порядок: сначала пароль, потом 2FA код
+          auth       required     pam_env.so
+          auth       required     pam_unix.so
+          auth       required     pam_google_authenticator.so nullok forward_pass
+          account    required     pam_unix.so
+          password   required     pam_unix.so
+          session    required     pam_unix.so
+          session    optional     pam_systemd.so
+        owner: root
+        group: root
+        mode: '0644'
+        backup: true
+      notify: Restart cockpit
+
+    - name: Initialize Google Authenticator for Cockpit user (non-interactive)
+      ansible.builtin.shell: |
+        su - {{ cockpit_user }} -c "google-authenticator -t -d -f -r 3 -R 30 -w 3 -q -Q UTF8"
+      args:
+        creates: "/home/{{ cockpit_user }}/.google_authenticator"
+      register: ga_init
+
+    - name: Fetch Google Authenticator secret for manual setup
+      ansible.builtin.slurp:
+        src: "/home/{{ cockpit_user }}/.google_authenticator"
+      register: ga_secret_file
+
+    - name: Extract TOTP secret from Google Authenticator file
+      ansible.builtin.set_fact:
+        totp_secret: "{{ (ga_secret_file['content'] | b64decode).split('\n')[0] }}"
+
+    - name: Display 2FA setup information
+      ansible.builtin.debug:
+        msg: |
+          ═══════════════════════════════════════════════════════════════
+          ✓ Cockpit installed and configured
+          ═══════════════════════════════════════════════════════════════
+          
+          Web UI access:
+            {% if cockpit_domain | length > 0 and letsencrypt_cert.stat.exists %}
+            URL:      https://{{ cockpit_domain }}:9090 (with valid SSL)
+            {% else %}
+            URL:      https://{{ ansible_host }}:9090 (self-signed cert)
+            {% endif %}
+            User:     {{ cockpit_user }}
+            Password: {{ cockpit_user_password }}
+          
+          2FA TOTP Secret Key: {{ totp_secret }}
+          
+          Setup 2FA in Google Authenticator app:
+          1. Open Google Authenticator app
+          2. Add new account → Enter a setup key
+          3. Account name: {{ cockpit_user }}@{{ ansible_hostname }}
+          4. Key: {{ totp_secret }}
+          5. Type: Time-based
+          
+          OR scan QR code via SSH:
+            ssh {{ ansible_user }}@{{ ansible_host }}
+            sudo su - {{ cockpit_user }}
+            google-authenticator
+          
+          Emergency scratch codes stored in:
+            /home/{{ cockpit_user }}/.google_authenticator
+          
+          ⚠️  IMPORTANT:
+          - SSH access for '{{ cockpit_user }}' is DISABLED
+          - This user can only access via Cockpit web UI
+          - Save the TOTP secret and emergency codes in a safe place!
+          {% if cockpit_domain | length > 0 and letsencrypt_cert.stat.exists %}
+          - SSL certificate will auto-renew with certbot
+          {% endif %}
+          ═══════════════════════════════════════════════════════════════
+
+    - name: Get Cockpit status
+      ansible.builtin.command: systemctl status cockpit.socket --no-pager
+      register: cockpit_status
+      changed_when: false
+      failed_when: false
+
+  handlers:
+    - name: Restart sshd
+      ansible.builtin.service:
+        name: ssh
+        state: restarted
+
+    - name: Restart cockpit
+      ansible.builtin.service:
+        name: cockpit.socket
+        state: restarted

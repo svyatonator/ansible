@@ -1,0 +1,21 @@
+[Unit]
+Description=Telegram notifier for successful SSH logins
+After=network-online.target ssh.service sshd.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+EnvironmentFile=/etc/ssh-telegram-notifier.env
+ExecStart=/usr/local/bin/ssh-telegram-notifier
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/run /var/log/journal /var/lib/ssh-telegram-notifier
+
+[Install]
+WantedBy=multi-user.target

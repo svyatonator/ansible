@@ -1,0 +1,82 @@
+---
+- name: Deploy SSH successful login Telegram notifier
+  hosts: servers
+  become: true
+  vars_files:
+    - group_vars/telegram-bot-alert_vault.yml
+  vars:
+    ssh_telegram_notifier_path: /usr/local/bin/ssh-telegram-notifier
+    ssh_telegram_env_path: /etc/ssh-telegram-notifier.env
+    ssh_telegram_service_name: ssh-telegram-notifier
+
+  pre_tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - telegram_bot_token is defined
+          - telegram_bot_token | length > 0
+          - telegram_allowed_user_id is defined
+          - telegram_allowed_user_id | string | length > 0
+        fail_msg: >-
+          Define telegram_bot_token and telegram_allowed_user_id (preferably in
+          vault) before running this playbook.
+
+  tasks:
+    - name: Ensure python3 is installed
+      ansible.builtin.package:
+        name: python3
+        state: present
+
+    - name: Install notifier script
+      ansible.builtin.template:
+        src: templates/ssh-telegram-notifier.py.j2
+        dest: "{{ ssh_telegram_notifier_path }}"
+        mode: "0755"
+        owner: root
+        group: root
+      notify: Restart ssh telegram notifier
+
+    - name: Install notifier environment file
+      ansible.builtin.template:
+        src: templates/ssh-telegram-notifier.env.j2
+        dest: "{{ ssh_telegram_env_path }}"
+        mode: "0600"
+        owner: root
+        group: root
+      notify: Restart ssh telegram notifier
+
+    - name: Ensure notifier state directory exists
+      ansible.builtin.file:
+        path: /var/lib/ssh-telegram-notifier
+        state: directory
+        owner: root
+        group: root
+        mode: "0700"
+
+    - name: Install systemd unit
+      ansible.builtin.template:
+        src: templates/ssh-telegram-notifier.service.j2
+        dest: /etc/systemd/system/{{ ssh_telegram_service_name }}.service
+        mode: "0644"
+        owner: root
+        group: root
+      notify:
+        - Reload systemd
+        - Restart ssh telegram notifier
+
+    - name: Enable and start notifier service
+      ansible.builtin.systemd:
+        name: "{{ ssh_telegram_service_name }}"
+        enabled: true
+        state: started
+        daemon_reload: true
+
+  handlers:
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Restart ssh telegram notifier
+      ansible.builtin.systemd:
+        name: "{{ ssh_telegram_service_name }}"
+        state: restarted

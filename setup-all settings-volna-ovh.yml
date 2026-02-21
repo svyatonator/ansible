@@ -1,0 +1,172 @@
+- name: Setup nginx static sites (volna.ovh domains)
+  hosts: servers
+  gather_facts: true
+  become: true
+
+  vars:
+    sites:
+      - domain: volna.ovh
+        cert_path: volna.ovh
+      - domain: kit.volna.ovh
+        cert_path: volna.ovh
+      - domain: port.volna.ovh
+        cert_path: volna.ovh
+
+  tasks:
+    - name: Ensure nginx is installed
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+
+    - name: Create site directories
+      ansible.builtin.file:
+        path: "/var/www/{{ item.domain }}"
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+      loop: "{{ sites }}"
+
+    - name: Create placeholder index.html for each site
+      ansible.builtin.copy:
+        dest: "/var/www/{{ item.domain }}/index.html"
+        content: "<h1>{{ item.domain }} OK</h1>\n"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+        force: false
+      loop: "{{ sites }}"
+
+    - name: Create security headers snippet
+      ansible.builtin.copy:
+        dest: /etc/nginx/snippets/security-headers.conf
+        content: |
+          add_header X-Content-Type-Options "nosniff" always;
+          add_header X-Frame-Options "DENY" always;
+          add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+          add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Reload nginx
+
+    - name: Create common SSL configuration snippet
+      ansible.builtin.copy:
+        dest: /etc/nginx/snippets/ssl.conf
+        content: |
+          # Общие SSL-настройки для всех HTTPS сайтов
+          include /etc/letsencrypt/options-ssl-nginx.conf;
+          ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Reload nginx
+
+    - name: Create 00-default catch-all configuration
+      ansible.builtin.copy:
+        dest: /etc/nginx/sites-available/00-default
+        content: |
+          # Ловим все "левые" домены и обращения по IP
+          server {
+              listen 80 default_server;
+              listen [::]:80 default_server;
+              server_name _;
+              return 444;
+          }
+
+          server {
+              listen 443 ssl default_server;
+              listen [::]:443 ssl default_server;
+              server_name _;
+              return 444;
+
+              # Нужен любой сертификат, иначе Nginx не поднимется на 443
+              # Используем тот, который уже есть (он всё равно не будет "матчиться" по домену)
+              ssl_certificate     /etc/letsencrypt/live/volna.ovh/fullchain.pem;
+              ssl_certificate_key /etc/letsencrypt/live/volna.ovh/privkey.pem;
+          }
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Reload nginx
+
+    - name: Enable 00-default catch-all site
+      ansible.builtin.file:
+        src: /etc/nginx/sites-available/00-default
+        dest: /etc/nginx/sites-enabled/00-default
+        state: link
+      notify: Reload nginx
+
+    - name: Remove default nginx site
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: Reload nginx
+
+    - name: Create nginx site configurations (HTTP + HTTPS)
+      ansible.builtin.copy:
+        dest: "/etc/nginx/sites-available/{{ item.domain }}"
+        content: |
+          server {
+              listen 80;
+              listen [::]:80;
+              server_name {{ item.domain }};
+              return 301 https://$server_name$request_uri;
+          }
+
+          server {
+              listen 443 ssl;
+              listen [::]:443 ssl;
+              server_name {{ item.domain }};
+
+              ssl_certificate /etc/letsencrypt/live/{{ item.cert_path }}/fullchain.pem;
+              ssl_certificate_key /etc/letsencrypt/live/{{ item.cert_path }}/privkey.pem;
+
+              include /etc/nginx/snippets/ssl.conf;
+              include /etc/nginx/snippets/security-headers.conf;
+
+              root /var/www/{{ item.domain }};
+              index index.html;
+
+              location / {
+                  try_files $uri $uri/ =404;
+              }
+          }
+        owner: root
+        group: root
+        mode: '0644'
+      loop: "{{ sites }}"
+      notify: Reload nginx
+
+    - name: Enable sites (create symlinks)
+      ansible.builtin.file:
+        src: "/etc/nginx/sites-available/{{ item.domain }}"
+        dest: "/etc/nginx/sites-enabled/{{ item.domain }}"
+        state: link
+      loop: "{{ sites }}"
+      notify: Reload nginx
+
+    - name: Test nginx configuration
+      ansible.builtin.command: nginx -t
+      register: nginx_test
+      changed_when: false
+
+    - name: Print nginx test result
+      ansible.builtin.debug:
+        msg: "{{ nginx_test.stderr_lines }}"
+
+    - name: Get list of enabled sites
+      ansible.builtin.find:
+        paths: /etc/nginx/sites-enabled
+        file_type: link
+      register: enabled_sites
+
+    - name: Print enabled sites
+      ansible.builtin.debug:
+        msg: "✓ Enabled sites: {{ enabled_sites.files | map(attribute='path') | map('basename') | list }}"
+
+  handlers:
+    - name: Reload nginx
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded

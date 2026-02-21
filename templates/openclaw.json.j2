@@ -1,0 +1,33 @@
+{
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "{{ openclaw_primary_model }}"
+      }
+    }
+  },
+  "channels": {
+    "telegram": {
+      "enabled": {{ "true" if openclaw_telegram_bot_token | length > 0 else "false" }}
+{% if openclaw_telegram_bot_token | length > 0 %}
+      ,
+      "botToken": "{{ openclaw_telegram_bot_token }}",
+      "dmPolicy": {{ '"open"' if ('*' in (openclaw_telegram_allow_from | default(['*']))) else '"allowlist"' }},
+      "allowFrom": {{ (openclaw_telegram_allow_from | default(['*']) | map('string') | list) | to_json }}
+{% endif %}
+    }
+  },
+  "gateway": {
+    "mode": "local"
+  },
+  "plugins": {
+{% if (openclaw_plugins_allow | default([]) | length) > 0 %}
+    "allow": {{ (openclaw_plugins_allow | map('string') | list) | to_json }},
+{% endif %}
+    "entries": {
+      "telegram": {
+        "enabled": {{ "true" if openclaw_telegram_bot_token | length > 0 else "false" }}
+      }
+    }
+  }
+}

@@ -1,0 +1,67 @@
+- name: bootstrap-2-remove-root-access
+  hosts: bootstrap
+  gather_facts: true
+  remote_user: "{{ new_user }}"
+  become: true
+  become_method: sudo
+  vars:
+    ansible_user: "{{ new_user }}"
+    ansible_become: true
+    ansible_become_method: sudo
+    ansible_become_user: root
+    ansible_remote_tmp: "/home/{{ new_user }}/.ansible/tmp"
+    ansible_ssh_common_args: "-o PreferredAuthentications=publickey -o PasswordAuthentication=no -o KbdInteractiveAuthentication=no -o IdentitiesOnly=yes"
+    sshd_config_path: /etc/ssh/sshd_config
+    bootstrap_ssh_private_key_file: "{{ lookup('env', 'HOME') + '/.ssh/operator_key' }}"
+    ansible_ssh_private_key_file: "{{ bootstrap_ssh_private_key_file }}"
+
+  tasks:
+    # Safety gate: убеждаемся, что пользователь и ключ реально существуют,
+    # прежде чем отключать root/пароли (чтобы не отрезать доступ).
+    - name: Check user exists
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ new_user }}"
+
+    - name: Ensure user's authorized_keys exists and is not empty
+      ansible.builtin.stat:
+        path: "/home/{{ new_user }}/.ssh/authorized_keys"
+      register: user_keys_file
+
+    - name: Fail if user authorized_keys missing (safety check)
+      ansible.builtin.fail:
+        msg: "User SSH key file is missing/empty; refusing to disable root access."
+      when: (not user_keys_file.stat.exists) or (user_keys_file.stat.size | default(0) | int == 0)
+
+    - name: Disable root login entirely
+      ansible.builtin.lineinfile:
+        path: "{{ sshd_config_path }}"
+        regexp: '^#?PermitRootLogin\s+'
+        line: 'PermitRootLogin no'
+      notify: Restart sshd
+
+    - name: Disable password authentication globally (key-only for everyone)
+      ansible.builtin.lineinfile:
+        path: "{{ sshd_config_path }}"
+        regexp: '^#?PasswordAuthentication\s+'
+        line: 'PasswordAuthentication no'
+      notify: Restart sshd
+
+    - name: Disable challenge-response auth (often PAM keyboard-interactive)
+      ansible.builtin.lineinfile:
+        path: "{{ sshd_config_path }}"
+        regexp: '^#?KbdInteractiveAuthentication\s+'
+        line: 'KbdInteractiveAuthentication no'
+      notify: Restart sshd
+
+  handlers:
+    - name: Validate sshd config
+      ansible.builtin.command: sshd -t
+      changed_when: false
+      listen: "Restart sshd"
+
+    - name: Restart sshd
+      ansible.builtin.service:
+        name: ssh
+        state: restarted
+      listen: "Restart sshd"

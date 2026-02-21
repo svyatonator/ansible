@@ -1,0 +1,53 @@
+- name: Setup nginx on rif server
+  hosts: servers
+  gather_facts: true
+  become: true
+
+  tasks:
+    - name: Install nginx and certbot
+      ansible.builtin.apt:
+        name:
+          - nginx
+          - certbot
+          - python3-certbot-nginx
+        state: present
+        update_cache: true
+
+    - name: Ensure nginx is enabled and started
+      ansible.builtin.service:
+        name: nginx
+        enabled: true
+        state: started
+
+    - name: Allow HTTP traffic through UFW (if UFW is active)
+      ansible.builtin.ufw:
+        rule: allow
+        port: '80'
+        proto: tcp
+      ignore_errors: true
+
+    - name: Allow HTTPS traffic through UFW (if UFW is active)
+      ansible.builtin.ufw:
+        rule: allow
+        port: '443'
+        proto: tcp
+      ignore_errors: true
+
+    - name: Get nginx status
+      ansible.builtin.command: systemctl status nginx --no-pager
+      register: nginx_status
+      changed_when: false
+      failed_when: false
+
+    - name: Print nginx status
+      ansible.builtin.debug:
+        msg: "{{ nginx_status.stdout_lines }}"
+
+    - name: Get nginx version
+      ansible.builtin.command: nginx -v
+      register: nginx_version
+      changed_when: false
+
+    - name: Print result
+      ansible.builtin.debug:
+        msg: "✓ Nginx installed and running: {{ nginx_version.stderr }}"

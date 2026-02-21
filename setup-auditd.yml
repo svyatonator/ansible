@@ -1,0 +1,72 @@
+- name: Setup and configure auditd on Ubuntu 22
+  hosts: servers
+  gather_facts: true
+  become: true
+
+  tasks:
+    - name: Install auditd and audispd-plugins
+      ansible.builtin.apt:
+        name:
+          - auditd
+          - audispd-plugins
+        state: present
+        update_cache: true
+
+    - name: Ensure auditd is enabled and started
+      ansible.builtin.service:
+        name: auditd
+        enabled: true
+        state: started
+
+    - name: Create audit rules for command logging
+      ansible.builtin.copy:
+        dest: /etc/audit/rules.d/commands.rules
+        content: |
+          ## Логирование всех выполненных команд
+          -a exit,always -F arch=b64 -S execve -k commands
+          -a exit,always -F arch=b32 -S execve -k commands
+          
+          ## Логирование изменений в sudoers
+          -w /etc/sudoers -p wa -k sudoers_changes
+          -w /etc/sudoers.d/ -p wa -k sudoers_changes
+          
+          ## Логирование изменений в SSH конфигурации
+          -w /etc/ssh/sshd_config -p wa -k sshd_config_changes
+        owner: root
+        group: root
+        mode: '0640'
+      notify: Reload auditd rules
+
+    - name: Check current audit rules
+      ansible.builtin.command: auditctl -l
+      register: audit_rules
+      changed_when: false
+
+    - name: Print current audit rules
+      ansible.builtin.debug:
+        msg: "{{ audit_rules.stdout_lines }}"
+
+    - name: Print auditd log location
+      ansible.builtin.debug:
+        msg: |
+          ✓ Auditd установлен и настроен
+          
+          Логи хранятся в: /var/log/audit/audit.log
+          
+          Команды для просмотра логов:
+          - sudo ausearch -k commands                    # все команды
+          - sudo ausearch -k commands -ts today          # команды за сегодня
+          - sudo ausearch -k commands -ui 1000           # команды конкретного UID
+          - sudo ausearch -k commands | aureport -x      # отчет по командам
+          - sudo tail -f /var/log/audit/audit.log        # мониторинг в реальном времени
+
+  handlers:
+    - name: Reload auditd rules
+      ansible.builtin.command: augenrules --load
+      changed_when: true
+      notify: Restart auditd
+
+    - name: Restart auditd
+      ansible.builtin.service:
+        name: auditd
+        state: restarted

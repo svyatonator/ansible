@@ -1,0 +1,38 @@
+[Unit]
+Description=OpenClaw gateway service (LXC)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=openclaw
+Group=openclaw
+WorkingDirectory={{ openclaw_root }}
+Restart=on-failure
+RestartSec=5
+Environment=HOME=/home/openclaw
+Environment=PATH=/home/openclaw/.npm-global/bin:/home/openclaw/.local/bin:/home/openclaw/.bun/bin:/usr/local/bin:/usr/bin:/bin
+Environment=OPENCLAW_HOME={{ openclaw_home }}
+Environment=OPENCLAW_WORKSPACE={{ openclaw_workspace }}
+Environment=OPENCLAW_CONFIG={{ openclaw_config_path }}
+Environment=OPENCLAW_PORT={{ openclaw_port }}
+{% if openclaw_gateway_token | length > 0 %}
+Environment=OPENCLAW_GATEWAY_TOKEN={{ openclaw_gateway_token }}
+{% endif %}
+{% if openclaw_telegram_bot_token | length > 0 %}
+Environment=TELEGRAM_BOT_TOKEN={{ openclaw_telegram_bot_token }}
+{% endif %}
+{% if opencode_api_key | length > 0 %}
+Environment=OPENCODE_API_KEY={{ opencode_api_key }}
+{% endif %}
+{% if brave_api_key | default('') | length > 0 %}
+Environment=BRAVE_API_KEY={{ brave_api_key }}
+{% endif %}
+{% if openclaw_command | length > 0 %}
+ExecStart=/bin/bash -lc "exec {{ openclaw_command | map('string') | join(' ') }}"
+{% else %}
+ExecStart=/bin/bash -lc "exec {{ openclaw_cli_cmd | default('openclaw') }} gateway --allow-unconfigured --port {{ openclaw_port }}"
+{% endif %}
+
+[Install]
+WantedBy=multi-user.target

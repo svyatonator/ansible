@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="{{ openclaw_root }}"
+BACKUP_DIR="{{ openclaw_backup }}"
+ARCHIVE="${1:-}"
+
+if [ -z "${ARCHIVE}" ]; then
+  echo "Usage: restore-openclaw.sh /path/to/openclaw_YYYY-MM-DD_HH-MM-SS.tar.gz"
+  exit 1
+fi
+
+if [ ! -f "${ARCHIVE}" ]; then
+  echo "Archive not found: ${ARCHIVE}"
+  exit 1
+fi
+
+STAMP="$(date +%F_%H-%M-%S)"
+PRE_RESTORE="${BACKUP_DIR}/pre_restore_${STAMP}.tar.gz"
+
+mkdir -p "${BACKUP_DIR}" "${ROOT}"
+
+snapshot_items=(
+  "{{ openclaw_home | basename }}"
+  "{{ openclaw_skills | basename }}"
+{% if openclaw_backup_include_workspace %}
+  "{{ openclaw_workspace | basename }}"
+{% endif %}
+)
+
+# Safety net: create a snapshot before restoring.
+tar -czf "${PRE_RESTORE}" -C "${ROOT}" "${snapshot_items[@]}"
+
+echo "Pre-restore backup created: ${PRE_RESTORE}"
+
+systemctl stop openclaw.service || true
+tar -xzf "${ARCHIVE}" -C "${ROOT}"
+systemctl start openclaw.service
+
+echo "Restore completed from: ${ARCHIVE}"

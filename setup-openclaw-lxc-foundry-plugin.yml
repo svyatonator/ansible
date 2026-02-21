@@ -1,0 +1,121 @@
+- name: Install openclaw-foundry plugin inside existing OpenClaw LXC
+  hosts: openclaw
+  gather_facts: false
+  become: true
+
+  vars:
+    openclaw_root: /srv/openclaw
+    openclaw_home: "{{ openclaw_root }}/home"
+    openclaw_skills: "{{ openclaw_root }}/skills"
+    openclaw_workspace: "{{ openclaw_root }}/workspace"
+    openclaw_config_path: "{{ openclaw_home }}/.openclaw/openclaw.json"
+    openclaw_lxc_name: openclaw
+    openclaw_foundry_package: "@getfoundry/foundry-openclaw"
+
+  tasks:
+    - name: Check if OpenClaw LXC container exists
+      ansible.builtin.command:
+        cmd: lxc info {{ openclaw_lxc_name }}
+      register: openclaw_lxc_exists
+      failed_when: false
+      changed_when: false
+
+    - name: Ensure OpenClaw LXC container exists
+      ansible.builtin.assert:
+        that:
+          - openclaw_lxc_exists.rc == 0
+        fail_msg: "LXC container '{{ openclaw_lxc_name }}' was not found."
+
+    - name: Ensure OpenClaw LXC container is started
+      ansible.builtin.command:
+        cmd: lxc start {{ openclaw_lxc_name }}
+      register: openclaw_lxc_start
+      failed_when: false
+      changed_when: openclaw_lxc_start.rc == 0
+
+    - name: Resolve OpenClaw CLI path inside LXC
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "if [ -x /home/openclaw/.npm-global/bin/openclaw ]; then
+             echo /home/openclaw/.npm-global/bin/openclaw;
+           elif [ -x /home/openclaw/.local/bin/openclaw ]; then
+             echo /home/openclaw/.local/bin/openclaw;
+           elif [ -x /home/openclaw/.bun/bin/openclaw ]; then
+             echo /home/openclaw/.bun/bin/openclaw;
+           elif [ -x /usr/local/bin/openclaw ]; then
+             echo /usr/local/bin/openclaw;
+           else
+             exit 1;
+           fi"
+      register: openclaw_cli_path
+      changed_when: false
+
+    - name: Ensure OpenClaw CLI was found inside LXC
+      ansible.builtin.assert:
+        that:
+          - (openclaw_cli_path.stdout | trim | length) > 0
+        fail_msg: >-
+          OpenClaw CLI was not found in LXC.
+          Deploy OpenClaw first with setup-openclaw-lxc.yml.
+
+    - name: Ensure openclaw can traverse and write runtime paths before plugin install
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "chown root:openclaw {{ openclaw_root }} &&
+          chmod 0750 {{ openclaw_root }} &&
+          chown -R openclaw:openclaw {{ openclaw_home }} {{ openclaw_workspace }} {{ openclaw_skills }} &&
+          install -d -m 0750 -o openclaw -g openclaw {{ openclaw_home }}/.openclaw/extensions"
+
+    - name: Check if foundry extension directory already exists
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "test -d {{ openclaw_home }}/.openclaw/extensions/foundry-openclaw"
+      register: openclaw_foundry_dir_check
+      failed_when: false
+      changed_when: false
+
+    - name: Install openclaw-foundry plugin
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "su - openclaw -s /bin/bash -c
+          'export HOME=/home/openclaw;
+          export PATH=/home/openclaw/.npm-global/bin:/home/openclaw/.local/bin:/home/openclaw/.bun/bin:/usr/local/bin:/usr/bin:/bin;
+          export OPENCLAW_HOME={{ openclaw_home }};
+          export OPENCLAW_WORKSPACE={{ openclaw_workspace }};
+          export OPENCLAW_CONFIG={{ openclaw_config_path }};
+          timeout 600s {{ openclaw_cli_path.stdout | trim }} plugins install \"{{ openclaw_foundry_package }}\"'"
+      register: openclaw_foundry_install
+      failed_when: >-
+        openclaw_foundry_install.rc != 0 and
+        ('plugin already exists' not in ((openclaw_foundry_install.stderr | default('')) | lower))
+      when: openclaw_foundry_dir_check.rc != 0
+
+    - name: Restart OpenClaw service in LXC
+      ansible.builtin.command:
+        cmd: lxc exec {{ openclaw_lxc_name }} -- systemctl restart openclaw.service
+
+    - name: Wait for OpenClaw service to be active in LXC
+      ansible.builtin.command:
+        cmd: lxc exec {{ openclaw_lxc_name }} -- systemctl is-active openclaw.service
+      register: openclaw_service_state
+      changed_when: false
+      failed_when: false
+      retries: 12
+      delay: 5
+      until: (openclaw_service_state.stdout | trim) == "active"
+
+    - name: Show OpenClaw service logs when service is not active
+      ansible.builtin.command:
+        cmd: lxc exec {{ openclaw_lxc_name }} -- journalctl -u openclaw.service -n 120 --no-pager
+      changed_when: false
+      when: (openclaw_service_state.stdout | trim) != "active"
+
+    - name: Ensure OpenClaw service is active in LXC
+      ansible.builtin.assert:
+        that:
+          - (openclaw_service_state.stdout | trim) == "active"
+        fail_msg: "openclaw.service is not active in LXC after foundry install."

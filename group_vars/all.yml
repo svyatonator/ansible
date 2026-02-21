@@ -1,0 +1,8 @@
+new_user: slava
+new_user_pubkey: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOyK70Zg/1+xzX7VuzwkvP+ZeGzVYFi/+oDF5VILVzf9 operator_key
+
+#additional_user: test
+#additional_user_pubkey: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOyK70Zg/1+xzX7VuzwkvP+ZeGzVYFi/+oDF5VILVzf9
+
+# небезопасно, после теста убрать
+#cockpit_admin_password: "YourStrongPassword123!"

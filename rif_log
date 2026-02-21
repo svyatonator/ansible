@@ -1,0 +1,17 @@
+docker run -d --name awg-jump --restart unless-stopped \
+  --network container:amnezia-awg \
+  alpine:3.19 sleep infinity
+
+  docker run -d --name awg-jump --restart unless-stopped \
+  --network container:amnezia-awg \
+  alpine:3.19 sleep infinity
+Теперь поставим туда SSH-клиент (в Alpine есть apk):
+
+bash
+Copy code
+docker exec -it awg-jump sh -lc "apk add --no-cache openssh-client"
+Проверь:
+
+bash
+Copy code
+docker exec -it awg-jump sh -lc "ssh -V"

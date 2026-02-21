@@ -1,0 +1,311 @@
+#!/usr/bin/env python3
+import json
+import os
+import re
+import select
+import socket
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from datetime import datetime, timezone
+
+
+LOGIN_RE = re.compile(
+    r"Accepted (?P<method>[\w\-/]+) for (invalid user )?(?P<user>\S+) "
+    r"from (?P<ip>\S+) port (?P<port>\d+)"
+)
+
+
+def load_config():
+    token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+    allowed_user_id = os.getenv("TELEGRAM_ALLOWED_USER_ID", "").strip()
+    if not token or not allowed_user_id:
+        raise ValueError("TELEGRAM_BOT_TOKEN and TELEGRAM_ALLOWED_USER_ID must be set")
+    if not allowed_user_id.lstrip("-").isdigit():
+        raise ValueError("TELEGRAM_ALLOWED_USER_ID must be a numeric telegram user id")
+
+    allow_users = {
+        u.strip() for u in os.getenv("SSH_TG_ALLOW_USERS", "").split(",") if u.strip()
+    }
+    ignore_users = {
+        u.strip() for u in os.getenv("SSH_TG_IGNORE_USERS", "").split(",") if u.strip()
+    }
+    hostname = os.getenv("SSH_TG_HOSTNAME", "").strip() or socket.gethostname()
+    prefix = os.getenv("SSH_TG_MESSAGE_PREFIX", "SSH login")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID", "").strip()
+    state_file = os.getenv(
+        "SSH_TG_STATE_FILE", "/var/lib/ssh-telegram-notifier/state.json"
+    ).strip()
+    return (
+        token,
+        allowed_user_id,
+        chat_id,
+        allow_users,
+        ignore_users,
+        hostname,
+        prefix,
+        state_file,
+    )
+
+
+def parse_timestamp_us(us_value):
+    try:
+        dt = datetime.fromtimestamp(int(us_value) / 1_000_000, tz=timezone.utc)
+    except (TypeError, ValueError):
+        dt = datetime.now(timezone.utc)
+    return dt.strftime("%Y-%m-%d %H:%M:%S %Z")
+
+
+def build_message(prefix, hostname, user, ip, method, port, timestamp):
+    return (
+        f"❗ {prefix}\n"
+        f"Host: {hostname}\n"
+        f"User: {user}\n"
+        f"IP: {ip}\n"
+        f"Method: {method}\n"
+        f"Port: {port}\n"
+        f"Time: {timestamp}"
+    )
+
+
+def telegram_api_call(token, method, params):
+    url = f"https://api.telegram.org/bot{token}/{method}"
+    payload = urllib.parse.urlencode(params).encode("utf-8")
+    req = urllib.request.Request(url, data=payload, method="POST")
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def send_telegram(token, chat_id, text):
+    data = telegram_api_call(
+        token,
+        "sendMessage",
+        {
+            "chat_id": chat_id,
+            "text": text,
+            "disable_web_page_preview": "true",
+        },
+    )
+    if not data.get("ok"):
+        raise RuntimeError(f"telegram response not ok: {data}")
+
+
+def load_state(state_file):
+    try:
+        with open(state_file, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+            if isinstance(data, dict):
+                return data
+    except FileNotFoundError:
+        return {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return {}
+
+
+def save_state(state_file, state):
+    state_dir = os.path.dirname(state_file)
+    if state_dir:
+        os.makedirs(state_dir, mode=0o700, exist_ok=True)
+    tmp_file = f"{state_file}.tmp"
+    with open(tmp_file, "w", encoding="utf-8") as fh:
+        json.dump(state, fh)
+    os.replace(tmp_file, state_file)
+
+
+def follow_ssh_journal():
+    cmd = [
+        "journalctl",
+        "-f",
+        "-n",
+        "0",
+        "-o",
+        "json",
+        "-u",
+        "ssh.service",
+        "-u",
+        "sshd.service",
+    ]
+    return subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+
+
+def fetch_updates(token, offset):
+    params = {
+        "timeout": "1",
+        "allowed_updates": json.dumps(["message"]),
+    }
+    if offset is not None:
+        params["offset"] = str(offset)
+    data = telegram_api_call(token, "getUpdates", params)
+    if not data.get("ok"):
+        raise RuntimeError(f"getUpdates failed: {data}")
+    return data.get("result", [])
+
+
+def process_updates(token, updates, allowed_user_id, chat_id, state, prefix):
+    next_offset = state.get("update_offset")
+    for upd in updates:
+        upd_id = upd.get("update_id")
+        if isinstance(upd_id, int):
+            next_offset = upd_id + 1
+        msg = upd.get("message", {})
+        if not msg:
+            continue
+        from_id = str(msg.get("from", {}).get("id", ""))
+        if from_id != allowed_user_id:
+            continue
+        new_chat_id = str(msg.get("chat", {}).get("id", "")).strip()
+        if new_chat_id:
+            chat_id = new_chat_id
+            state["chat_id"] = chat_id
+        text = (msg.get("text") or "").strip()
+        if text in ("/start", "/chatid"):
+            reply = (
+                f"✅ {prefix} notifier linked.\n"
+                f"Your user_id={allowed_user_id}\n"
+                f"Current chat_id={chat_id or 'not set'}"
+            )
+            if chat_id:
+                try:
+                    send_telegram(token, chat_id, reply)
+                except (urllib.error.URLError, RuntimeError) as exc:
+                    print(f"send reply error: {exc}", file=sys.stderr)
+    if next_offset is not None:
+        state["update_offset"] = next_offset
+    return chat_id
+
+
+def parse_login_line(line):
+    try:
+        evt = json.loads(line)
+    except json.JSONDecodeError:
+        return None
+
+    message = evt.get("MESSAGE", "")
+    match = LOGIN_RE.search(message)
+    if not match:
+        return None
+
+    return {
+        "user": match.group("user"),
+        "ip": match.group("ip"),
+        "method": match.group("method"),
+        "port": match.group("port"),
+        "timestamp": parse_timestamp_us(evt.get("__REALTIME_TIMESTAMP")),
+    }
+
+
+def main():
+    try:
+        (
+            token,
+            allowed_user_id,
+            chat_id,
+            allow_users,
+            ignore_users,
+            hostname,
+            prefix,
+            state_file,
+        ) = load_config()
+    except ValueError as exc:
+        print(f"config error: {exc}", file=sys.stderr)
+        return 2
+
+    state = load_state(state_file)
+    if not chat_id:
+        chat_id = str(state.get("chat_id", "")).strip()
+    update_offset = state.get("update_offset")
+    if not isinstance(update_offset, int):
+        update_offset = None
+    warn_no_chat_id_ts = 0
+
+    while True:
+        proc = follow_ssh_journal()
+        try:
+            while True:
+                now = time.time()
+                try:
+                    updates = fetch_updates(token, update_offset)
+                    chat_id_before = chat_id
+                    chat_id = process_updates(
+                        token=token,
+                        updates=updates,
+                        allowed_user_id=allowed_user_id,
+                        chat_id=chat_id,
+                        state=state,
+                        prefix=prefix,
+                    )
+                    new_offset = state.get("update_offset")
+                    if isinstance(new_offset, int):
+                        update_offset = new_offset
+                    if chat_id != chat_id_before:
+                        save_state(state_file, state)
+                except (urllib.error.URLError, RuntimeError) as exc:
+                    print(f"telegram poll error: {exc}", file=sys.stderr)
+
+                ready, _, _ = select.select([proc.stdout], [], [], 1)
+                if not ready:
+                    if proc.poll() is not None:
+                        raise RuntimeError("journalctl process stopped")
+                    continue
+
+                line = proc.stdout.readline()
+                if not line:
+                    continue
+                line = line.strip()
+                if not line:
+                    continue
+
+                login_event = parse_login_line(line)
+                if not login_event:
+                    continue
+
+                user = login_event["user"]
+                if allow_users and user not in allow_users:
+                    continue
+                if user in ignore_users:
+                    continue
+
+                if not chat_id:
+                    if now - warn_no_chat_id_ts > 60:
+                        print(
+                            "chat_id not set; send /start to bot from allowed user",
+                            file=sys.stderr,
+                        )
+                        warn_no_chat_id_ts = now
+                    continue
+
+                text = build_message(
+                    prefix=prefix,
+                    hostname=hostname,
+                    user=user,
+                    ip=login_event["ip"],
+                    method=login_event["method"],
+                    port=login_event["port"],
+                    timestamp=login_event["timestamp"],
+                )
+                try:
+                    send_telegram(token, chat_id, text)
+                except (urllib.error.URLError, RuntimeError) as exc:
+                    print(f"send error: {exc}", file=sys.stderr)
+        except Exception as exc:  # noqa: BLE001
+            print(f"runtime error: {exc}", file=sys.stderr)
+        finally:
+            try:
+                proc.terminate()
+            except Exception:  # noqa: BLE001
+                pass
+        time.sleep(3)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

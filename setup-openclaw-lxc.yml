@@ -1,0 +1,531 @@
+- name: Provision OpenClaw inside LXC and configure backups
+  hosts: openclaw
+  gather_facts: true
+  become: true
+
+  vars:
+    # OpenClaw variables kept aligned with setup-openclaw-docker.yml
+    openclaw_root: /srv/openclaw
+    openclaw_home: "{{ openclaw_root }}/home"
+    openclaw_skills: "{{ openclaw_root }}/skills"
+    openclaw_workspace: "{{ openclaw_root }}/workspace"
+    openclaw_backup: "{{ openclaw_root }}/backup"
+    openclaw_uid: 1000
+    openclaw_gid: 1000
+    openclaw_user: "1000:1000"
+    openclaw_container_home: /home/node
+    openclaw_container_data: /home/node/.openclaw
+    openclaw_config_path: "{{ openclaw_home }}/.openclaw/openclaw.json"
+    openclaw_primary_model: "opencode/big-pickle"
+    openclaw_image: "ghcr.io/openclaw/openclaw:latest"
+    openclaw_port: 18789
+    openclaw_command: []
+    openclaw_backup_keep_count: 3
+    openclaw_backup_interval_days: 3
+    openclaw_backup_include_workspace: false
+    openclaw_skills_git_init: false
+    docker_arch_map:
+      x86_64: amd64
+      amd64: amd64
+      aarch64: arm64
+      arm64: arm64
+      armv7l: armhf
+
+    # LXC-specific settings
+    openclaw_lxc_name: openclaw
+    openclaw_lxc_image: ubuntu:22.04
+    openclaw_grant_sudo: false
+    openclaw_plugins_allow:
+      - telegram
+      - foundry-openclaw
+
+  vars_files:
+    - group_vars/openclaw_vault.yml
+
+  tasks:
+    - name: Validate Telegram allow-list is provided via vault
+      ansible.builtin.assert:
+        that:
+          - openclaw_telegram_allow_from is defined
+          - openclaw_telegram_allow_from is sequence
+          - openclaw_telegram_allow_from is not string
+          - (openclaw_telegram_allow_from | length) > 0
+          - (openclaw_telegram_allow_from | map('string') | list | length) == (openclaw_telegram_allow_from | length)
+        fail_msg: >-
+          Set openclaw_telegram_allow_from in group_vars/openclaw_vault.yml
+          as a non-empty list of Telegram user IDs (or ["*"] for open access).
+
+    - name: Install host base packages for LXC management
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - git
+          - tar
+        state: present
+        update_cache: true
+
+    - name: Detect available LXD package in apt
+      ansible.builtin.shell: >-
+        if [ "$(apt-cache policy lxd | awk -F': ' '/Candidate:/ {print $2}')" != "(none)" ]; then
+          echo lxd;
+        elif [ "$(apt-cache policy lxd-installer | awk -F': ' '/Candidate:/ {print $2}')" != "(none)" ]; then
+          echo lxd-installer;
+        else
+          exit 1;
+        fi
+      args:
+        executable: /bin/bash
+      register: openclaw_lxd_package
+      changed_when: false
+
+    - name: Install LXD package
+      ansible.builtin.apt:
+        name: "{{ openclaw_lxd_package.stdout }}"
+        state: present
+
+    - name: Ensure LXD command is available when using lxd-installer
+      ansible.builtin.command:
+        cmd: lxd version
+      environment:
+        LXD_INSTALLER_NO_PROMPT: "1"
+      changed_when: false
+      when: openclaw_lxd_package.stdout == "lxd-installer"
+
+    - name: Collect service facts
+      ansible.builtin.service_facts:
+
+    - name: Ensure apt-managed LXD service is running
+      ansible.builtin.service:
+        name: lxd
+        state: started
+        enabled: true
+      when: "'lxd.service' in ansible_facts.services"
+
+    - name: Ensure snap-managed LXD service is running
+      ansible.builtin.service:
+        name: snap.lxd.daemon
+        state: started
+        enabled: true
+      when: "'snap.lxd.daemon.service' in ansible_facts.services"
+
+    - name: Check if LXD is already initialized
+      ansible.builtin.command:
+        cmd: lxc profile list
+      register: openclaw_lxd_profile_check
+      failed_when: false
+      changed_when: false
+
+    - name: Initialize LXD non-interactively if needed
+      ansible.builtin.command:
+        cmd: lxd init --auto
+      when: openclaw_lxd_profile_check.rc != 0
+
+    - name: Check if default LXD storage pool exists
+      ansible.builtin.command:
+        cmd: lxc storage show default
+      register: openclaw_lxd_storage_pool_check
+      failed_when: false
+      changed_when: false
+
+    - name: Create default LXD storage pool if missing
+      ansible.builtin.command:
+        cmd: lxc storage create default dir
+      when: openclaw_lxd_storage_pool_check.rc != 0
+
+    - name: Check if default profile has root disk device
+      ansible.builtin.command:
+        cmd: lxc profile device get default root path
+      register: openclaw_lxd_root_device_check
+      failed_when: false
+      changed_when: false
+
+    - name: Add root disk device to default profile if missing
+      ansible.builtin.command:
+        cmd: lxc profile device add default root disk path=/ pool=default
+      when: openclaw_lxd_root_device_check.rc != 0
+
+    - name: Ensure root disk device in default profile uses default pool
+      ansible.builtin.command:
+        cmd: lxc profile device set default root pool default
+      changed_when: false
+
+    - name: Check if managed LXD bridge lxdbr0 exists
+      ansible.builtin.command:
+        cmd: lxc network show lxdbr0
+      register: openclaw_lxd_bridge_check
+      failed_when: false
+      changed_when: false
+
+    - name: Create managed LXD bridge lxdbr0 if missing
+      ansible.builtin.command:
+        cmd: lxc network create lxdbr0 ipv4.address=auto ipv4.nat=true ipv6.address=none
+      when: openclaw_lxd_bridge_check.rc != 0
+
+    - name: Check if default profile has network device
+      ansible.builtin.command:
+        cmd: lxc profile device get default eth0 network
+      register: openclaw_lxd_default_nic_check
+      failed_when: false
+      changed_when: false
+
+    - name: Add network device to default profile if missing
+      ansible.builtin.command:
+        cmd: lxc profile device add default eth0 nic network=lxdbr0 name=eth0
+      when: openclaw_lxd_default_nic_check.rc != 0
+
+    - name: Check if OpenClaw LXC container already exists
+      ansible.builtin.command:
+        cmd: lxc info {{ openclaw_lxc_name }}
+      register: openclaw_lxc_exists
+      failed_when: false
+      changed_when: false
+
+    - name: Launch OpenClaw LXC container
+      ansible.builtin.command:
+        cmd: lxc launch {{ openclaw_lxc_image }} {{ openclaw_lxc_name }}
+      when: openclaw_lxc_exists.rc != 0
+
+    - name: Ensure OpenClaw LXC container is started
+      ansible.builtin.command:
+        cmd: lxc start {{ openclaw_lxc_name }}
+      register: openclaw_lxc_start
+      failed_when: false
+      changed_when: openclaw_lxc_start.rc == 0
+
+    - name: Check if OpenClaw container has a NIC device
+      ansible.builtin.command:
+        cmd: lxc config show --expanded {{ openclaw_lxc_name }}
+      register: openclaw_lxc_expanded_config
+      changed_when: false
+
+    - name: Add NIC device to existing OpenClaw container if missing
+      ansible.builtin.command:
+        cmd: lxc config device add {{ openclaw_lxc_name }} eth0 nic network=lxdbr0 name=eth0
+      register: openclaw_lxc_nic_add
+      when:
+        - "'type: nic' not in openclaw_lxc_expanded_config.stdout"
+        - openclaw_lxc_exists.rc == 0
+
+    - name: Restart OpenClaw container when NIC was added
+      ansible.builtin.command:
+        cmd: lxc restart {{ openclaw_lxc_name }}
+      when:
+        - openclaw_lxc_exists.rc == 0
+        - openclaw_lxc_nic_add is defined
+        - openclaw_lxc_nic_add is changed
+
+    - name: Wait for cloud-init in container if available
+      ansible.builtin.command:
+        cmd: lxc exec {{ openclaw_lxc_name }} -- cloud-init status --wait
+      failed_when: false
+      changed_when: false
+
+    - name: Install base packages inside LXC
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "export DEBIAN_FRONTEND=noninteractive &&
+          apt-get update &&
+          apt-get install -y ca-certificates curl git tar"
+
+    - name: Ensure openclaw group exists inside LXC
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "if getent group openclaw >/dev/null 2>&1; then
+             exit 0;
+           elif getent group {{ openclaw_gid }} >/dev/null 2>&1; then
+             groupadd openclaw;
+           else
+             groupadd -g {{ openclaw_gid }} openclaw;
+           fi"
+
+    - name: Ensure openclaw user exists inside LXC
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "if id -u openclaw >/dev/null 2>&1; then
+             exit 0;
+           elif getent passwd {{ openclaw_uid }} >/dev/null 2>&1; then
+             useradd -m -g openclaw -s /bin/bash openclaw;
+           else
+             useradd -m -u {{ openclaw_uid }} -g openclaw -s /bin/bash openclaw;
+           fi"
+
+    - name: Install sudo inside LXC when openclaw sudo access is requested
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y sudo"
+      when: openclaw_grant_sudo | bool
+
+    - name: Add openclaw to sudo group inside LXC
+      ansible.builtin.command:
+        cmd: lxc exec {{ openclaw_lxc_name }} -- usermod -aG sudo openclaw
+      when: openclaw_grant_sudo | bool
+
+    - name: Configure passwordless sudo for openclaw inside LXC
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "printf '%s\n' 'openclaw ALL=(ALL) NOPASSWD:ALL' >/etc/sudoers.d/90-openclaw &&
+          chmod 0440 /etc/sudoers.d/90-openclaw"
+      when: openclaw_grant_sudo | bool
+
+    - name: Create OpenClaw folders inside LXC
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "install -d -m 0750 {{ openclaw_root }} {{ openclaw_backup }} &&
+          install -d -m 0750 -o openclaw -g openclaw
+          {{ openclaw_home }} {{ openclaw_home }}/.openclaw {{ openclaw_skills }} {{ openclaw_workspace }}"
+
+    - name: Ensure OpenClaw root path is traversable by openclaw in LXC
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "chown root:openclaw {{ openclaw_root }} &&
+          chmod 0750 {{ openclaw_root }}"
+
+    - name: Check DNS resolution for OpenClaw installer domain inside LXC
+      ansible.builtin.command:
+        cmd: lxc exec {{ openclaw_lxc_name }} -- getent hosts openclaw.ai
+      register: openclaw_installer_dns_check
+      failed_when: false
+      changed_when: false
+
+    - name: Ensure OpenClaw installer domain is resolvable inside LXC
+      ansible.builtin.assert:
+        that:
+          - openclaw_installer_dns_check.rc == 0
+        fail_msg: >-
+          openclaw.ai is not resolvable inside LXC container.
+          Fix container DNS/network, then rerun the playbook.
+
+    - name: Check Node.js major version inside LXC
+      ansible.builtin.command:
+        cmd: lxc exec {{ openclaw_lxc_name }} -- bash -lc "node -p 'process.versions.node.split(\".\")[0]'"
+      register: openclaw_node_major_check
+      failed_when: false
+      changed_when: false
+
+    - name: Install Node.js 22 inside LXC when missing or too old
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "set -e;
+          export DEBIAN_FRONTEND=noninteractive;
+          apt-get update;
+          apt-get install -y ca-certificates curl gnupg;
+          install -d -m 0755 /etc/apt/keyrings;
+          curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key -o /tmp/nodesource-repo.gpg.key;
+          gpg --dearmor --batch --yes -o /etc/apt/keyrings/nodesource.gpg /tmp/nodesource-repo.gpg.key;
+          echo 'deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main' > /etc/apt/sources.list.d/nodesource.list;
+          apt-get update;
+          apt-get install -y nodejs"
+      when:
+        - openclaw_node_major_check.rc != 0 or (openclaw_node_major_check.stdout | int) < 22
+
+    - name: Install OpenClaw CLI inside LXC if missing
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "if ! su - openclaw -s /bin/bash -c 'export PATH=/home/openclaw/.npm-global/bin:/home/openclaw/.local/bin:/home/openclaw/.bun/bin:/usr/local/bin:/usr/bin:/bin:$PATH; command -v openclaw >/dev/null 2>&1 || [ -x /home/openclaw/.npm-global/bin/openclaw ] || [ -x /home/openclaw/.local/bin/openclaw ] || [ -x /home/openclaw/.bun/bin/openclaw ] || [ -x /usr/local/bin/openclaw ]'; then
+             su - openclaw -s /bin/bash -c 'set -e; export HOME=/home/openclaw; export PATH=/home/openclaw/.npm-global/bin:/home/openclaw/.local/bin:/home/openclaw/.bun/bin:/usr/local/bin:/usr/bin:/bin:$PATH; mkdir -p /home/openclaw; cd /home/openclaw; curl -fSL https://openclaw.ai/install.sh -o /tmp/openclaw-install.sh; bash /tmp/openclaw-install.sh || true; command -v openclaw >/dev/null 2>&1 || [ -x /home/openclaw/.npm-global/bin/openclaw ] || [ -x /home/openclaw/.local/bin/openclaw ] || [ -x /home/openclaw/.bun/bin/openclaw ] || [ -x /usr/local/bin/openclaw ]';
+           fi"
+
+    - name: Resolve OpenClaw CLI path inside LXC
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "if [ -x /home/openclaw/.npm-global/bin/openclaw ]; then
+             echo /home/openclaw/.npm-global/bin/openclaw;
+           elif [ -x /home/openclaw/.local/bin/openclaw ]; then
+             echo /home/openclaw/.local/bin/openclaw;
+           elif [ -x /home/openclaw/.bun/bin/openclaw ]; then
+             echo /home/openclaw/.bun/bin/openclaw;
+           elif [ -x /usr/local/bin/openclaw ]; then
+             echo /usr/local/bin/openclaw;
+           else
+             exit 1;
+           fi"
+      register: openclaw_cli_path
+      changed_when: false
+
+    - name: Ensure OpenClaw CLI was found inside LXC
+      ansible.builtin.assert:
+        that:
+          - (openclaw_cli_path.stdout | trim | length) > 0
+        fail_msg: >-
+          OpenClaw CLI was not found inside LXC after installer run.
+          Check installer output and where it places the binary.
+
+    - name: Save OpenClaw CLI command for later tasks
+      ansible.builtin.set_fact:
+        openclaw_cli_cmd: "{{ openclaw_cli_path.stdout | trim }}"
+
+    - name: Link OpenClaw CLI to /usr/local/bin inside LXC
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "ln -sf '{{ openclaw_cli_cmd }}' /usr/local/bin/openclaw"
+      when:
+        - openclaw_cli_cmd != "/usr/local/bin/openclaw"
+        - openclaw_cli_cmd is match('^/.*/openclaw$')
+
+    - name: Initialize skills directory as git repo (optional) inside LXC
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "su - openclaw -s /bin/bash -c 'cd {{ openclaw_skills }} && [ -d .git ] || git init'"
+      when: openclaw_skills_git_init | bool
+
+    - name: Render OpenClaw config locally on target host
+      ansible.builtin.template:
+        src: templates/openclaw.json.j2
+        dest: /tmp/openclaw.json
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Render OpenClaw systemd unit locally on target host
+      ansible.builtin.template:
+        src: templates/openclaw-lxc.service.j2
+        dest: /tmp/openclaw.service
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Render LXC backup script locally on target host
+      ansible.builtin.template:
+        src: templates/backup-openclaw-lxc.sh.j2
+        dest: /tmp/backup-openclaw.sh
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Render LXC restore script locally on target host
+      ansible.builtin.template:
+        src: templates/restore-openclaw-lxc.sh.j2
+        dest: /tmp/restore-openclaw.sh
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Render backup service unit locally on target host
+      ansible.builtin.template:
+        src: templates/openclaw-backup.service.j2
+        dest: /tmp/openclaw-backup.service
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Render backup timer unit locally on target host
+      ansible.builtin.template:
+        src: templates/openclaw-backup.timer.j2
+        dest: /tmp/openclaw-backup.timer
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Push OpenClaw config into LXC
+      ansible.builtin.command:
+        cmd: lxc file push /tmp/openclaw.json {{ openclaw_lxc_name }}{{ openclaw_config_path }}
+
+    - name: Set ownership and mode for OpenClaw config in LXC
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "chown openclaw:openclaw {{ openclaw_config_path }} &&
+          chmod 0640 {{ openclaw_config_path }}"
+
+    - name: Ensure OpenClaw runtime directories are writable by openclaw in LXC
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "install -d -m 0750 -o openclaw -g openclaw
+          {{ openclaw_home }}
+          {{ openclaw_home }}/.openclaw
+          {{ openclaw_home }}/.openclaw/extensions
+          {{ openclaw_workspace }}
+          {{ openclaw_skills }} &&
+          chown -R openclaw:openclaw {{ openclaw_home }} {{ openclaw_workspace }} {{ openclaw_skills }}"
+
+    - name: Push OpenClaw service unit into LXC
+      ansible.builtin.command:
+        cmd: lxc file push /tmp/openclaw.service {{ openclaw_lxc_name }}/etc/systemd/system/openclaw.service
+
+    - name: Push backup helper script into LXC
+      ansible.builtin.command:
+        cmd: lxc file push /tmp/backup-openclaw.sh {{ openclaw_lxc_name }}/usr/local/bin/backup-openclaw.sh
+
+    - name: Push restore helper script into LXC
+      ansible.builtin.command:
+        cmd: lxc file push /tmp/restore-openclaw.sh {{ openclaw_lxc_name }}/usr/local/bin/restore-openclaw.sh
+
+    - name: Set mode for helper scripts in LXC
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "chmod 0750 /usr/local/bin/backup-openclaw.sh /usr/local/bin/restore-openclaw.sh &&
+          chown root:root /usr/local/bin/backup-openclaw.sh /usr/local/bin/restore-openclaw.sh"
+
+    - name: Push backup service unit into LXC
+      ansible.builtin.command:
+        cmd: lxc file push /tmp/openclaw-backup.service {{ openclaw_lxc_name }}/etc/systemd/system/openclaw-backup.service
+
+    - name: Push backup timer unit into LXC
+      ansible.builtin.command:
+        cmd: lxc file push /tmp/openclaw-backup.timer {{ openclaw_lxc_name }}/etc/systemd/system/openclaw-backup.timer
+
+    - name: Reload systemd in LXC
+      ansible.builtin.command:
+        cmd: lxc exec {{ openclaw_lxc_name }} -- systemctl daemon-reload
+
+    - name: Enable and start OpenClaw service in LXC
+      ansible.builtin.command:
+        cmd: lxc exec {{ openclaw_lxc_name }} -- systemctl enable --now openclaw.service
+
+    - name: Wait for OpenClaw service to be active in LXC
+      ansible.builtin.command:
+        cmd: lxc exec {{ openclaw_lxc_name }} -- systemctl is-active openclaw.service
+      register: openclaw_service_state
+      changed_when: false
+      failed_when: false
+      retries: 12
+      delay: 5
+      until: (openclaw_service_state.stdout | trim) == "active"
+
+    - name: Show OpenClaw service logs when service is not active
+      ansible.builtin.command:
+        cmd: lxc exec {{ openclaw_lxc_name }} -- journalctl -u openclaw.service -n 120 --no-pager
+      register: openclaw_service_logs
+      changed_when: false
+      when: (openclaw_service_state.stdout | trim) != "active"
+
+    - name: Ensure OpenClaw service is active in LXC
+      ansible.builtin.assert:
+        that:
+          - (openclaw_service_state.stdout | trim) == "active"
+        fail_msg: >-
+          openclaw.service is not active in LXC.
+          Check previous journal output in task "Show OpenClaw service logs when service is not active".
+
+    - name: Enable and start backup timer in LXC
+      ansible.builtin.command:
+        cmd: lxc exec {{ openclaw_lxc_name }} -- systemctl enable --now openclaw-backup.timer
+
+    - name: Check existing OpenClaw backup archives in LXC
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "ls -1 {{ openclaw_backup }}/openclaw_*.tar.gz >/dev/null 2>&1"
+      register: openclaw_existing_backups
+      failed_when: false
+      changed_when: false
+
+    - name: Create initial backup in LXC if no backups exist
+      ansible.builtin.command:
+        cmd: lxc exec {{ openclaw_lxc_name }} -- /usr/local/bin/backup-openclaw.sh
+      when: openclaw_existing_backups.rc != 0

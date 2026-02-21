@@ -1,0 +1,236 @@
+- name: Install OpenClaw in Docker and configure backups
+  hosts: openclaw
+  gather_facts: true
+  become: true
+
+  vars:
+    openclaw_root: /srv/openclaw
+    openclaw_home: "{{ openclaw_root }}/home"
+    openclaw_skills: "{{ openclaw_root }}/skills"
+    openclaw_workspace: "{{ openclaw_root }}/workspace"
+    openclaw_backup: "{{ openclaw_root }}/backup"
+    openclaw_uid: 1000
+    openclaw_gid: 1000
+    openclaw_user: "1000:1000"
+    openclaw_container_home: /home/node
+    openclaw_container_data: /home/node/.openclaw
+    openclaw_config_path: "{{ openclaw_home }}/openclaw.json"
+    openclaw_primary_model: "opencode/big-pickle"
+
+    # Use a pinned tag if you want reproducible builds, e.g. ghcr.io/openclaw/openclaw:2026.2.9
+    openclaw_image: "ghcr.io/openclaw/openclaw:latest"
+    openclaw_port: 18789
+
+    # Leave empty to use image defaults (Entrypoint/Cmd).
+    # Example override:
+    # openclaw_command:
+    #   - node
+    #   - openclaw.mjs
+    #   - gateway
+    #   - --allow-unconfigured
+    #   - --port
+    #   - "{{ openclaw_port }}"
+    openclaw_command: []
+
+    # Backup policy
+    openclaw_backup_keep_count: 3
+    openclaw_backup_interval_days: 3
+    openclaw_backup_include_workspace: false
+
+    # Optional: keep skills in a git repo
+    openclaw_skills_git_init: false
+
+    docker_arch_map:
+      x86_64: amd64
+      amd64: amd64
+      aarch64: arm64
+      arm64: arm64
+      armv7l: armhf
+
+  vars_files:
+    - group_vars/openclaw_vault.yml
+
+  pre_tasks:
+    - name: Validate Telegram allow-list is provided via vault
+      ansible.builtin.assert:
+        that:
+          - openclaw_telegram_allow_from is defined
+          - openclaw_telegram_allow_from is sequence
+          - openclaw_telegram_allow_from is not string
+          - (openclaw_telegram_allow_from | length) > 0
+          - (openclaw_telegram_allow_from | map('string') | list | length) == (openclaw_telegram_allow_from | length)
+        fail_msg: >-
+          Set openclaw_telegram_allow_from in group_vars/openclaw_vault.yml
+          as a non-empty list of Telegram user IDs (or ["*"] for open access).
+
+    - name: Ensure apt cache is up to date
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+  tasks:
+    - name: Install base packages
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - git
+          - tar
+        state: present
+
+    - name: Ensure Docker keyring directory exists
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Download Docker GPG key
+      ansible.builtin.get_url:
+        url: "https://download.docker.com/linux/ubuntu/gpg"
+        dest: /tmp/docker.gpg
+        mode: "0644"
+
+    - name: Dearmor Docker GPG key
+      ansible.builtin.command:
+        cmd: "gpg --dearmor -o /etc/apt/keyrings/docker.gpg /tmp/docker.gpg"
+      args:
+        creates: /etc/apt/keyrings/docker.gpg
+
+    - name: Add Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ docker_arch_map.get(ansible_facts['architecture'], ansible_facts['architecture']) }} signed-by=/etc/apt/keyrings/docker.gpg]
+          https://download.docker.com/linux/ubuntu
+          {{ ansible_facts['distribution_release'] }} stable
+        state: present
+        filename: docker
+
+    - name: Install Docker engine and compose plugin
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: true
+
+    - name: Ensure Docker is enabled and running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create OpenClaw folders on host
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0750"
+      loop:
+        - "{{ openclaw_root }}"
+        - "{{ openclaw_backup }}"
+
+    - name: Create OpenClaw writable folders with container ownership
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ openclaw_uid }}"
+        group: "{{ openclaw_gid }}"
+        mode: "0750"
+      loop:
+        - "{{ openclaw_home }}"
+        - "{{ openclaw_skills }}"
+        - "{{ openclaw_workspace }}"
+
+    - name: Initialize skills directory as git repo (optional)
+      ansible.builtin.command:
+        cmd: git init
+        chdir: "{{ openclaw_skills }}"
+      args:
+        creates: "{{ openclaw_skills }}/.git"
+      when: openclaw_skills_git_init | bool
+
+    - name: Write docker-compose.yml
+      ansible.builtin.template:
+        src: templates/docker-compose.yml.j2
+        dest: "{{ openclaw_root }}/docker-compose.yml"
+        owner: root
+        group: root
+        mode: "0640"
+
+    - name: Write OpenClaw config
+      ansible.builtin.template:
+        src: templates/openclaw.json.j2
+        dest: "{{ openclaw_config_path }}"
+        owner: "{{ openclaw_uid }}"
+        group: "{{ openclaw_gid }}"
+        mode: "0640"
+
+    - name: Pull OpenClaw image
+      ansible.builtin.command:
+        cmd: docker compose pull
+        chdir: "{{ openclaw_root }}"
+
+    - name: Start OpenClaw
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: "{{ openclaw_root }}"
+
+    - name: Install backup script
+      ansible.builtin.template:
+        src: templates/backup-openclaw.sh.j2
+        dest: /usr/local/bin/backup-openclaw.sh
+        owner: root
+        group: root
+        mode: "0750"
+
+    - name: Install restore script
+      ansible.builtin.template:
+        src: templates/restore-openclaw.sh.j2
+        dest: /usr/local/bin/restore-openclaw.sh
+        owner: root
+        group: root
+        mode: "0750"
+
+    - name: Check existing OpenClaw backup archives
+      ansible.builtin.find:
+        paths: "{{ openclaw_backup }}"
+        patterns: "openclaw_*.tar.gz"
+        file_type: file
+      register: openclaw_existing_backups
+
+    - name: Create initial backup if no backups exist
+      ansible.builtin.command:
+        cmd: /usr/local/bin/backup-openclaw.sh
+      when: (openclaw_existing_backups.matched | int) == 0
+
+    - name: Install systemd backup service
+      ansible.builtin.template:
+        src: templates/openclaw-backup.service.j2
+        dest: /etc/systemd/system/openclaw-backup.service
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install systemd backup timer
+      ansible.builtin.template:
+        src: templates/openclaw-backup.timer.j2
+        dest: /etc/systemd/system/openclaw-backup.timer
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Enable and start backup timer
+      ansible.builtin.systemd:
+        name: openclaw-backup.timer
+        enabled: true
+        state: started

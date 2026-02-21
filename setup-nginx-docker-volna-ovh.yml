@@ -1,0 +1,296 @@
+- name: Setup Docker nginx static sites (volna.ovh domains)
+  hosts: servers
+  gather_facts: true
+  become: true
+
+  vars:
+    nginx_docker_root: /opt/nginx-docker
+    nginx_container_name: nginx
+    letsencrypt_webroot: /var/www/letsencrypt
+    certbot_cert_name: volna.ovh
+    certbot_domains:
+      - volna.ovh
+      - kit.volna.ovh
+      - port.volna.ovh
+    sites:
+      - domain: volna.ovh
+      - domain: kit.volna.ovh
+      - domain: port.volna.ovh
+    compose_plugin_version: v2.33.1
+    compose_arch_map:
+      x86_64: x86_64
+      amd64: x86_64
+      aarch64: aarch64
+      arm64: aarch64
+
+  tasks:
+    - name: Install Docker and certbot
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - certbot
+        state: present
+        update_cache: true
+
+    - name: Try to install Docker Compose plugin package
+      ansible.builtin.apt:
+        name: docker-compose-plugin
+        state: present
+      register: compose_plugin_install
+      failed_when: false
+
+    - name: Install legacy docker-compose package when plugin is unavailable
+      ansible.builtin.apt:
+        name: docker-compose
+        state: present
+      when: compose_plugin_install.rc is defined and compose_plugin_install.rc != 0
+
+    - name: Ensure Docker is enabled and started
+      ansible.builtin.service:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Detect Docker Compose v2 command
+      ansible.builtin.shell: |
+        if docker compose version >/dev/null 2>&1; then
+          echo "docker compose"
+        else
+          exit 1
+        fi
+      register: docker_compose_detect
+      changed_when: false
+      failed_when: false
+
+    - name: Ensure Docker CLI plugins directory exists
+      ansible.builtin.file:
+        path: /usr/local/lib/docker/cli-plugins
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      when: docker_compose_detect.rc != 0
+
+    - name: Install Docker Compose v2 CLI plugin binary fallback
+      ansible.builtin.get_url:
+        url: "https://github.com/docker/compose/releases/download/{{ compose_plugin_version }}/docker-compose-linux-{{ compose_arch_map.get(ansible_facts['architecture'], 'x86_64') }}"
+        dest: /usr/local/lib/docker/cli-plugins/docker-compose
+        owner: root
+        group: root
+        mode: "0755"
+      when: docker_compose_detect.rc != 0
+
+    - name: Re-detect Docker Compose v2 command after plugin fallback
+      ansible.builtin.shell: |
+        if docker compose version >/dev/null 2>&1; then
+          echo "docker compose"
+        else
+          exit 1
+        fi
+      register: docker_compose_detect_retry
+      changed_when: false
+      failed_when: false
+      when: docker_compose_detect.rc != 0
+
+    - name: Choose effective Docker Compose detection result
+      ansible.builtin.set_fact:
+        docker_compose_detect_effective: "{{ docker_compose_detect_retry if docker_compose_detect.rc != 0 else docker_compose_detect }}"
+
+    - name: Fail if Docker Compose is still unavailable
+      ansible.builtin.fail:
+        msg: "Neither 'docker compose' nor 'docker-compose' is available after fallback installation."
+      when: docker_compose_detect_effective.rc != 0
+
+    - name: Set Docker Compose command fact
+      ansible.builtin.set_fact:
+        docker_compose_cmd: "{{ docker_compose_detect_effective.stdout }}"
+
+    - name: Allow HTTP traffic through UFW (if UFW is active)
+      ansible.builtin.ufw:
+        rule: allow
+        port: "80"
+        proto: tcp
+      ignore_errors: true
+
+    - name: Allow HTTPS traffic through UFW (if UFW is active)
+      ansible.builtin.ufw:
+        rule: allow
+        port: "443"
+        proto: tcp
+      ignore_errors: true
+
+    - name: Ensure webroot for ACME challenge exists
+      ansible.builtin.file:
+        path: "{{ letsencrypt_webroot }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Ensure static site directories exist
+      ansible.builtin.file:
+        path: "/var/www/{{ item.domain }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop: "{{ sites }}"
+
+    - name: Create placeholder index.html for each site
+      ansible.builtin.copy:
+        dest: "/var/www/{{ item.domain }}/index.html"
+        content: "<h1>{{ item.domain }} via Docker nginx</h1>\n"
+        owner: root
+        group: root
+        mode: "0644"
+        force: false
+      loop: "{{ sites }}"
+
+    - name: Create Docker nginx project directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - "{{ nginx_docker_root }}"
+        - "{{ nginx_docker_root }}/conf.d"
+
+    - name: Write nginx main config
+      ansible.builtin.template:
+        src: templates/nginx-docker-nginx.conf.j2
+        dest: "{{ nginx_docker_root }}/nginx.conf"
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart nginx docker stack
+
+    - name: Write nginx domain config
+      ansible.builtin.template:
+        src: templates/nginx-docker-volna-sites.conf.j2
+        dest: "{{ nginx_docker_root }}/conf.d/volna-sites.conf"
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart nginx docker stack
+
+    - name: Write docker compose file for nginx
+      ansible.builtin.template:
+        src: templates/docker-compose-nginx-volna.yml.j2
+        dest: "{{ nginx_docker_root }}/docker-compose.yml"
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart nginx docker stack
+
+    - name: Stop and disable host nginx to free ports 80/443
+      ansible.builtin.service:
+        name: nginx
+        state: stopped
+        enabled: false
+      failed_when: false
+
+    - name: Ensure nginx docker stack is up
+      ansible.builtin.command:
+        cmd: "{{ docker_compose_cmd }} up -d"
+        chdir: "{{ nginx_docker_root }}"
+
+    - name: Flush handlers to apply any config changes
+      ansible.builtin.meta: flush_handlers
+
+    - name: Validate nginx config inside container
+      ansible.builtin.command:
+        cmd: docker exec {{ nginx_container_name }} nginx -t
+      register: nginx_test
+      changed_when: false
+
+    - name: Print nginx config test output
+      ansible.builtin.debug:
+        msg: "{{ nginx_test.stderr_lines }}"
+
+    - name: Ensure certbot deploy hook directory exists
+      ansible.builtin.file:
+        path: /etc/letsencrypt/renewal-hooks/deploy
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install deploy hook to reload docker nginx after renew
+      ansible.builtin.copy:
+        dest: /etc/letsencrypt/renewal-hooks/deploy/reload-nginx-docker.sh
+        owner: root
+        group: root
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          if docker ps --format '{{ "{{" }}.Names{{ "}}" }}' | grep -qx '{{ nginx_container_name }}'; then
+            docker exec {{ nginx_container_name }} nginx -s reload >/dev/null 2>&1 || true
+          fi
+          exit 0
+
+    - name: Force renewal config to use webroot authenticator
+      ansible.builtin.ini_file:
+        path: "/etc/letsencrypt/renewal/{{ certbot_cert_name }}.conf"
+        section: renewalparams
+        option: authenticator
+        value: webroot
+        mode: "0644"
+
+    - name: Remove nginx installer from renewal config
+      ansible.builtin.ini_file:
+        path: "/etc/letsencrypt/renewal/{{ certbot_cert_name }}.conf"
+        section: renewalparams
+        option: installer
+        state: absent
+        mode: "0644"
+
+    - name: Set webroot path in renewal config
+      ansible.builtin.ini_file:
+        path: "/etc/letsencrypt/renewal/{{ certbot_cert_name }}.conf"
+        section: renewalparams
+        option: webroot_path
+        value: "{{ letsencrypt_webroot }}"
+        mode: "0644"
+
+    - name: Re-issue certificate once with webroot to finalize migration
+      ansible.builtin.command:
+        argv:
+          - certbot
+          - certonly
+          - --webroot
+          - -w
+          - "{{ letsencrypt_webroot }}"
+          - -d
+          - "{{ certbot_domains[0] }}"
+          - -d
+          - "{{ certbot_domains[1] }}"
+          - -d
+          - "{{ certbot_domains[2] }}"
+          - --cert-name
+          - "{{ certbot_cert_name }}"
+          - --force-renewal
+          - --non-interactive
+      register: certbot_config
+      changed_when: true
+
+    - name: Print certbot reconfigure result
+      ansible.builtin.debug:
+        msg: "{{ certbot_config.stdout_lines }}"
+
+    - name: Validate certbot automatic renewal
+      ansible.builtin.command:
+        cmd: certbot renew --dry-run
+      register: certbot_dry_run
+      changed_when: false
+
+    - name: Print certbot dry-run result
+      ansible.builtin.debug:
+        msg: "{{ certbot_dry_run.stdout_lines }}"
+
+  handlers:
+    - name: Restart nginx docker stack
+      ansible.builtin.command:
+        cmd: "{{ docker_compose_cmd }} up -d"
+        chdir: "{{ nginx_docker_root }}"

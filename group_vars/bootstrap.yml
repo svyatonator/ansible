@@ -1,0 +1,2 @@
+# Intentionally left without connection/become overrides.
+# Bootstrap playbooks define remote user and privilege model explicitly.

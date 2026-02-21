@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="{{ openclaw_root }}"
+HOME_DIR="{{ openclaw_home }}"
+SKILLS_DIR="{{ openclaw_skills }}"
+WORKSPACE_DIR="{{ openclaw_workspace }}"
+BACKUP_DIR="{{ openclaw_backup }}"
+KEEP_COUNT="{{ openclaw_backup_keep_count }}"
+
+TS="$(date +%F_%H-%M-%S)"
+OUT="${BACKUP_DIR}/openclaw_${TS}.tar.gz"
+
+mkdir -p "${BACKUP_DIR}"
+
+backup_items=(
+  "docker-compose.yml"
+  "{{ openclaw_home | basename }}"
+  "{{ openclaw_skills | basename }}"
+{% if openclaw_backup_include_workspace %}
+  "{{ openclaw_workspace | basename }}"
+{% endif %}
+)
+
+# Backup compose + state + skills (and optionally workspace)
+tar -czf "${OUT}" -C "${ROOT}" "${backup_items[@]}"
+
+# Rotate backups: keep only latest N archives.
+if [ "${KEEP_COUNT}" -gt 0 ]; then
+  mapfile -t old_backups < <(
+    ls -1t "${BACKUP_DIR}"/openclaw_*.tar.gz 2>/dev/null | tail -n +"$((KEEP_COUNT + 1))" || true
+  )
+  if [ -n "${old_backups[*]:-}" ]; then
+    rm -f "${old_backups[@]}"
+  fi
+fi
+
+echo "Backup created: ${OUT}"
