@@ -17,9 +17,12 @@
           - telegram_bot_token | length > 0
           - telegram_allowed_user_id is defined
           - telegram_allowed_user_id | string | length > 0
+          - telegram_chat_id is defined
+          - telegram_chat_id | string | length > 0
+          - (telegram_chat_id | string).lstrip('-') is match('^[0-9]+$')
         fail_msg: >-
-          Define telegram_bot_token and telegram_allowed_user_id (preferably in
-          vault) before running this playbook.
+          Define telegram_bot_token, telegram_allowed_user_id and telegram_chat_id
+          (preferably in vault) before running this playbook.
 
   tasks:
     - name: Ensure python3 is installed

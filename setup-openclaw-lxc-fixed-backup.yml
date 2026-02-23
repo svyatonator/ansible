@@ -1,0 +1,79 @@
+- name: Deploy fixed backup policy for OpenClaw LXC
+  hosts: openclaw
+  gather_facts: false
+  become: true
+
+  vars:
+    openclaw_lxc_name: openclaw
+    openclaw_root: /srv/openclaw
+    openclaw_fixed_backup_dir: /srv/openclaw/backup-fixed
+    openclaw_fixed_backup_script_path: /usr/local/bin/openclaw-lxc-fixed-backup.sh
+    openclaw_fixed_restore_script_path: /usr/local/bin/openclaw-lxc-fixed-restore.sh
+    openclaw_fixed_backup_initial_name: openclaw-initial.tar.gz
+    openclaw_fixed_backup_daily_name: openclaw-daily.tar.gz
+    openclaw_fixed_backup_cron_file: /etc/cron.d/openclaw-lxc-fixed-backup
+    openclaw_fixed_backup_hour: "4"
+    openclaw_fixed_backup_minute: "0"
+
+  tasks:
+    - name: Ensure backup directory exists on host
+      ansible.builtin.file:
+        path: "{{ openclaw_fixed_backup_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0750"
+
+    - name: Deploy fixed backup script on host
+      ansible.builtin.copy:
+        src: scripts/openclaw-lxc-fixed-backup.sh
+        dest: "{{ openclaw_fixed_backup_script_path }}"
+        owner: root
+        group: root
+        mode: "0750"
+
+    - name: Deploy fixed restore script on host
+      ansible.builtin.copy:
+        src: scripts/openclaw-lxc-fixed-restore.sh
+        dest: "{{ openclaw_fixed_restore_script_path }}"
+        owner: root
+        group: root
+        mode: "0750"
+
+    - name: Deploy cron schedule for fixed backups
+      ansible.builtin.template:
+        src: templates/openclaw-lxc-fixed-backup.cron.j2
+        dest: "{{ openclaw_fixed_backup_cron_file }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Run fixed backup once now (create initial + refresh daily)
+      ansible.builtin.command:
+        cmd: >-
+          env
+          LXC_NAME={{ openclaw_lxc_name }}
+          CONTAINER_DATA_ROOT={{ openclaw_root }}
+          HOST_BACKUP_DIR={{ openclaw_fixed_backup_dir }}
+          INITIAL_NAME={{ openclaw_fixed_backup_initial_name }}
+          DAILY_NAME={{ openclaw_fixed_backup_daily_name }}
+          CRON_FILE={{ openclaw_fixed_backup_cron_file }}
+          {{ openclaw_fixed_backup_script_path }} --run-only
+      changed_when: true
+
+    - name: Verify initial backup exists
+      ansible.builtin.stat:
+        path: "{{ openclaw_fixed_backup_dir }}/{{ openclaw_fixed_backup_initial_name }}"
+      register: openclaw_fixed_backup_initial_stat
+
+    - name: Verify daily backup exists
+      ansible.builtin.stat:
+        path: "{{ openclaw_fixed_backup_dir }}/{{ openclaw_fixed_backup_daily_name }}"
+      register: openclaw_fixed_backup_daily_stat
+
+    - name: Ensure fixed backup artifacts are present
+      ansible.builtin.assert:
+        that:
+          - openclaw_fixed_backup_initial_stat.stat.exists
+          - openclaw_fixed_backup_daily_stat.stat.exists
+        fail_msg: "Fixed backup archives were not created on host."

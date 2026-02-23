@@ -34,15 +34,28 @@
     # LXC-specific settings
     openclaw_lxc_name: openclaw
     openclaw_lxc_image: ubuntu:22.04
+    openclaw_lxc_launch_timeout_sec: 900
+    openclaw_cloud_init_timeout_sec: 300
+    openclaw_network_wait_retries: 20
+    openclaw_network_wait_delay_sec: 5
+    openclaw_apt_timeout_sec: 300
     openclaw_grant_sudo: false
     openclaw_plugins_allow:
       - telegram
-      - foundry-openclaw
 
   vars_files:
     - group_vars/openclaw_vault.yml
 
   tasks:
+    - name: Check mode is not supported for this playbook
+      ansible.builtin.assert:
+        that:
+          - not ansible_check_mode
+        fail_msg: >-
+          setup-openclaw-lxc.yml does not support --check mode because it relies on
+          command-based LXC operations (lxc launch/start/exec) that Ansible skips in check mode.
+          Run without --check.
+
     - name: Validate Telegram allow-list is provided via vault
       ansible.builtin.assert:
         that:
@@ -77,7 +90,16 @@
       args:
         executable: /bin/bash
       register: openclaw_lxd_package
+      check_mode: false
       changed_when: false
+
+    - name: Ensure LXD package candidate was detected
+      ansible.builtin.assert:
+        that:
+          - (openclaw_lxd_package.stdout | default('') | trim | length) > 0
+        fail_msg: >-
+          Could not detect available LXD package (lxd or lxd-installer) via apt-cache.
+          Check apt metadata/repositories on target host.
 
     - name: Install LXD package
       ansible.builtin.apt:
@@ -108,6 +130,15 @@
         state: started
         enabled: true
       when: "'snap.lxd.daemon.service' in ansible_facts.services"
+
+    - name: Wait until LXD daemon responds
+      ansible.builtin.command:
+        cmd: lxc info
+      register: openclaw_lxd_info
+      changed_when: false
+      retries: 20
+      delay: 3
+      until: openclaw_lxd_info.rc == 0
 
     - name: Check if LXD is already initialized
       ansible.builtin.command:
@@ -183,8 +214,30 @@
 
     - name: Launch OpenClaw LXC container
       ansible.builtin.command:
-        cmd: lxc launch {{ openclaw_lxc_image }} {{ openclaw_lxc_name }}
+        cmd: >-
+          timeout {{ openclaw_lxc_launch_timeout_sec }}s
+          lxc launch {{ openclaw_lxc_image }} {{ openclaw_lxc_name }}
+      register: openclaw_lxc_launch
+      failed_when: false
+      changed_when: openclaw_lxc_launch.rc == 0
       when: openclaw_lxc_exists.rc != 0
+
+    - name: Recheck OpenClaw LXC container existence after launch attempt
+      ansible.builtin.command:
+        cmd: lxc info {{ openclaw_lxc_name }}
+      register: openclaw_lxc_exists_after_launch
+      failed_when: false
+      changed_when: false
+      when: openclaw_lxc_exists.rc != 0
+
+    - name: Ensure OpenClaw LXC container was created
+      ansible.builtin.assert:
+        that:
+          - openclaw_lxc_exists.rc == 0 or (openclaw_lxc_exists_after_launch.rc | default(1)) == 0
+        fail_msg: >-
+          Failed to create LXC container "{{ openclaw_lxc_name }}" from image "{{ openclaw_lxc_image }}".
+          Usually this means image download/network issues on host or LXD bootstrap problems.
+          Check: lxc list, lxc operation list, journalctl -u snap.lxd.daemon -n 120 --no-pager.
 
     - name: Ensure OpenClaw LXC container is started
       ansible.builtin.command:
@@ -192,6 +245,15 @@
       register: openclaw_lxc_start
       failed_when: false
       changed_when: openclaw_lxc_start.rc == 0
+
+    - name: Wait until OpenClaw LXC container is RUNNING
+      ansible.builtin.command:
+        cmd: lxc list {{ openclaw_lxc_name }} --format csv -c s
+      register: openclaw_lxc_state
+      changed_when: false
+      retries: 20
+      delay: 3
+      until: "'RUNNING' in (openclaw_lxc_state.stdout | trim)"
 
     - name: Check if OpenClaw container has a NIC device
       ansible.builtin.command:
@@ -217,17 +279,39 @@
 
     - name: Wait for cloud-init in container if available
       ansible.builtin.command:
-        cmd: lxc exec {{ openclaw_lxc_name }} -- cloud-init status --wait
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "timeout {{ openclaw_cloud_init_timeout_sec }}s cloud-init status --wait"
       failed_when: false
       changed_when: false
+
+    - name: Wait for default IPv4 route inside LXC
+      ansible.builtin.command:
+        cmd: lxc exec {{ openclaw_lxc_name }} -- bash -lc "ip -4 route show default"
+      register: openclaw_lxc_default_route
+      changed_when: false
+      retries: "{{ openclaw_network_wait_retries | int }}"
+      delay: "{{ openclaw_network_wait_delay_sec | int }}"
+      until: openclaw_lxc_default_route.rc == 0 and (openclaw_lxc_default_route.stdout | trim | length) > 0
+
+    - name: Wait for DNS resolution inside LXC (archive.ubuntu.com)
+      ansible.builtin.command:
+        cmd: lxc exec {{ openclaw_lxc_name }} -- getent hosts archive.ubuntu.com
+      register: openclaw_lxc_dns_archive
+      changed_when: false
+      retries: "{{ openclaw_network_wait_retries | int }}"
+      delay: "{{ openclaw_network_wait_delay_sec | int }}"
+      until: openclaw_lxc_dns_archive.rc == 0
 
     - name: Install base packages inside LXC
       ansible.builtin.command:
         cmd: >-
           lxc exec {{ openclaw_lxc_name }} -- bash -lc
-          "export DEBIAN_FRONTEND=noninteractive &&
-          apt-get update &&
-          apt-get install -y ca-certificates curl git tar"
+          "set -e;
+          export DEBIAN_FRONTEND=noninteractive;
+          printf '%s\n' 'Acquire::ForceIPv4 \"true\";' 'Acquire::Retries \"3\";' 'Acquire::http::Timeout \"20\";' 'Acquire::https::Timeout \"20\";' >/etc/apt/apt.conf.d/99openclaw-network;
+          timeout {{ openclaw_apt_timeout_sec }}s apt-get update;
+          timeout {{ openclaw_apt_timeout_sec }}s apt-get install -y ca-certificates curl git tar"
 
     - name: Ensure openclaw group exists inside LXC
       ansible.builtin.command:
@@ -257,7 +341,9 @@
       ansible.builtin.command:
         cmd: >-
           lxc exec {{ openclaw_lxc_name }} -- bash -lc
-          "export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y sudo"
+          "export DEBIAN_FRONTEND=noninteractive &&
+          timeout {{ openclaw_apt_timeout_sec }}s apt-get update &&
+          timeout {{ openclaw_apt_timeout_sec }}s apt-get install -y sudo"
       when: openclaw_grant_sudo | bool
 
     - name: Add openclaw to sudo group inside LXC
@@ -294,6 +380,9 @@
       register: openclaw_installer_dns_check
       failed_when: false
       changed_when: false
+      retries: "{{ openclaw_network_wait_retries | int }}"
+      delay: "{{ openclaw_network_wait_delay_sec | int }}"
+      until: openclaw_installer_dns_check.rc == 0
 
     - name: Ensure OpenClaw installer domain is resolvable inside LXC
       ansible.builtin.assert:
@@ -310,29 +399,50 @@
       failed_when: false
       changed_when: false
 
+    - name: Check NodeSource reachability inside LXC before Node.js 22 install
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ openclaw_lxc_name }} -- bash -lc
+          "timeout 20s curl -4fsSI https://deb.nodesource.com >/dev/null"
+      register: openclaw_nodesource_reachable
+      failed_when: false
+      changed_when: false
+      when:
+        - openclaw_node_major_check is not defined or openclaw_node_major_check.rc != 0 or (openclaw_node_major_check.stdout | int) < 22
+
+    - name: Ensure NodeSource is reachable from LXC when Node.js 22 install is needed
+      ansible.builtin.assert:
+        that:
+          - openclaw_nodesource_reachable.rc == 0
+        fail_msg: >-
+          deb.nodesource.com is unreachable from LXC. Node.js 22 install will fail.
+          Fix LXC egress/DNS first, then rerun.
+      when:
+        - openclaw_node_major_check is not defined or openclaw_node_major_check.rc != 0 or (openclaw_node_major_check.stdout | int) < 22
+
     - name: Install Node.js 22 inside LXC when missing or too old
       ansible.builtin.command:
         cmd: >-
           lxc exec {{ openclaw_lxc_name }} -- bash -lc
           "set -e;
           export DEBIAN_FRONTEND=noninteractive;
-          apt-get update;
-          apt-get install -y ca-certificates curl gnupg;
+          timeout {{ openclaw_apt_timeout_sec }}s apt-get update;
+          timeout {{ openclaw_apt_timeout_sec }}s apt-get install -y ca-certificates curl gnupg;
           install -d -m 0755 /etc/apt/keyrings;
-          curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key -o /tmp/nodesource-repo.gpg.key;
+          timeout 60s curl -4fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key -o /tmp/nodesource-repo.gpg.key;
           gpg --dearmor --batch --yes -o /etc/apt/keyrings/nodesource.gpg /tmp/nodesource-repo.gpg.key;
           echo 'deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main' > /etc/apt/sources.list.d/nodesource.list;
-          apt-get update;
-          apt-get install -y nodejs"
+          timeout {{ openclaw_apt_timeout_sec }}s apt-get update;
+          timeout {{ openclaw_apt_timeout_sec }}s apt-get install -y nodejs"
       when:
-        - openclaw_node_major_check.rc != 0 or (openclaw_node_major_check.stdout | int) < 22
+        - openclaw_node_major_check is not defined or openclaw_node_major_check.rc != 0 or (openclaw_node_major_check.stdout | int) < 22
 
     - name: Install OpenClaw CLI inside LXC if missing
       ansible.builtin.command:
         cmd: >-
           lxc exec {{ openclaw_lxc_name }} -- bash -lc
           "if ! su - openclaw -s /bin/bash -c 'export PATH=/home/openclaw/.npm-global/bin:/home/openclaw/.local/bin:/home/openclaw/.bun/bin:/usr/local/bin:/usr/bin:/bin:$PATH; command -v openclaw >/dev/null 2>&1 || [ -x /home/openclaw/.npm-global/bin/openclaw ] || [ -x /home/openclaw/.local/bin/openclaw ] || [ -x /home/openclaw/.bun/bin/openclaw ] || [ -x /usr/local/bin/openclaw ]'; then
-             su - openclaw -s /bin/bash -c 'set -e; export HOME=/home/openclaw; export PATH=/home/openclaw/.npm-global/bin:/home/openclaw/.local/bin:/home/openclaw/.bun/bin:/usr/local/bin:/usr/bin:/bin:$PATH; mkdir -p /home/openclaw; cd /home/openclaw; curl -fSL https://openclaw.ai/install.sh -o /tmp/openclaw-install.sh; bash /tmp/openclaw-install.sh || true; command -v openclaw >/dev/null 2>&1 || [ -x /home/openclaw/.npm-global/bin/openclaw ] || [ -x /home/openclaw/.local/bin/openclaw ] || [ -x /home/openclaw/.bun/bin/openclaw ] || [ -x /usr/local/bin/openclaw ]';
+             su - openclaw -s /bin/bash -c 'set -e; export HOME=/home/openclaw; export PATH=/home/openclaw/.npm-global/bin:/home/openclaw/.local/bin:/home/openclaw/.bun/bin:/usr/local/bin:/usr/bin:/bin:$PATH; mkdir -p /home/openclaw; cd /home/openclaw; timeout 60s curl -4fSL https://openclaw.ai/install.sh -o /tmp/openclaw-install.sh; timeout 240s bash /tmp/openclaw-install.sh || true; command -v openclaw >/dev/null 2>&1 || [ -x /home/openclaw/.npm-global/bin/openclaw ] || [ -x /home/openclaw/.local/bin/openclaw ] || [ -x /home/openclaw/.bun/bin/openclaw ] || [ -x /usr/local/bin/openclaw ]';
            fi"
 
     - name: Resolve OpenClaw CLI path inside LXC

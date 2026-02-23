@@ -20,6 +20,14 @@
   "gateway": {
     "mode": "local"
   },
+  "tools": {
+    "elevated": {
+      "enabled": true,
+      "allowFrom": {
+        "telegram": {{ (openclaw_telegram_allow_from | default([]) | list) | to_json }}
+      }
+    }
+  },
   "plugins": {
 {% if (openclaw_plugins_allow | default([]) | length) > 0 %}
     "allow": {{ (openclaw_plugins_allow | map('string') | list) | to_json }},

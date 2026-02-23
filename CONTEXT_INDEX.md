@@ -6,7 +6,7 @@
 - Основная конфигурация: `ansible.cfg`
 - Альтернативная конфигурация: `ansible_backup_new.cfg`
 - Групповые переменные: `group_vars/all.yml`, `group_vars/servers.yml`, `group_vars/bootstrap.yml`
-- Плейбуки: `*.yml` в корне репозитория (включая `setup-openclaw-docker.yml`, `setup-openclaw-lxc.yml`, `setup-openclaw-lxc-foundry-plugin.yml`)
+- Плейбуки: `*.yml` в корне репозитория (включая `setup-openclaw-docker.yml`, `setup-openclaw-lxc.yml`, `setup-openclaw-lxc-foundry-plugin.yml`, `setup-openclaw-lxc-fixed-backup.yml`)
 - Заметки: `readme`, `rif_log`
 
 ## Конфигурация Ansible
@@ -33,6 +33,11 @@
 - `openclaw_backup_interval_days`: период запуска systemd timer в днях. `setup-openclaw-docker.yml`
 - `openclaw_grant_sudo`: выдача `sudo` прав пользователю `openclaw` внутри LXC (по умолчанию `false`). `setup-openclaw-lxc.yml`
 - `openclaw_plugins_allow`: allowlist plugin id для `plugins.allow` в OpenClaw config. `setup-openclaw-lxc.yml`
+- `openclaw_lxc_launch_timeout_sec`: timeout на `lxc launch` (сек). `setup-openclaw-lxc.yml`
+- `openclaw_cloud_init_timeout_sec`: timeout ожидания cloud-init в LXC (сек). `setup-openclaw-lxc.yml`
+- `openclaw_network_wait_retries`: retries сетевых precheck шагов в LXC. `setup-openclaw-lxc.yml`
+- `openclaw_network_wait_delay_sec`: delay между retries сетевых precheck шагов в LXC. `setup-openclaw-lxc.yml`
+- `openclaw_apt_timeout_sec`: timeout для apt install/update внутри LXC (сек). `setup-openclaw-lxc.yml`
 - `openclaw_foundry_package`: npm package foundry plugin. `setup-openclaw-lxc-foundry-plugin.yml`
 - `openclaw_lxc_name`: имя LXC-контейнера OpenClaw. `setup-openclaw-lxc.yml`, `setup-openclaw-lxc-foundry-plugin.yml`
 - `cockpit_admin_password`: упоминается в комментариях; задается через prompt или vault. `group_vars/all.yml`
@@ -89,12 +94,17 @@
 - `setup-openclaw-lxc.yml`
   - Hosts: `openclaw`
   - Назначение: развернуть LXC-контейнер `openclaw`, установить OpenClaw напрямую в контейнер (без Docker), настроить backup/restore и systemd timer внутри контейнера.
-  - Особенности: использует runtime-конфиг `{{ openclaw_home }}/.openclaw/openclaw.json`, включает health-check `openclaw.service`, может опционально выдать `sudo` пользователю `openclaw` (`openclaw_grant_sudo=true`).
+  - Особенности: использует runtime-конфиг `{{ openclaw_home }}/.openclaw/openclaw.json`, включает health-check `openclaw.service`, может опционально выдать `sudo` пользователю `openclaw` (`openclaw_grant_sudo=true`), делает явные LXC network precheck и таймауты на `launch/cloud-init/apt`.
+  - Ограничение: не поддерживает `--check` mode.
   - Шаблоны: `templates/openclaw-lxc.service.j2`, `templates/openclaw.json.j2`, `templates/backup-openclaw-lxc.sh.j2`, `templates/restore-openclaw-lxc.sh.j2`, `templates/openclaw-backup.service.j2`, `templates/openclaw-backup.timer.j2`.
 - `setup-openclaw-lxc-foundry-plugin.yml`
   - Hosts: `openclaw`
   - Назначение: отдельная установка/переустановка `@getfoundry/foundry-openclaw` в уже развернутый LXC OpenClaw.
-  - Особенности: идемпотентная проверка по каталогу `.../.openclaw/extensions/foundry-openclaw`, рестарт `openclaw.service`, проверка `active` после установки.
+  - Особенности: идемпотентная проверка по каталогу `.../.openclaw/extensions/foundry-openclaw`, временно убирает `foundry-openclaw` из `plugins.allow` на этапе install (чтобы избежать config-lock), рестарт `openclaw.service`, проверка `active` после установки.
+- `setup-openclaw-lxc-fixed-backup.yml`
+  - Hosts: `openclaw`
+  - Назначение: развернуть fixed backup схему для LXC OpenClaw (один постоянный `initial` + один перезаписываемый `daily`).
+  - Особенности: кладет скрипты `/usr/local/bin/openclaw-lxc-fixed-backup.sh` и `/usr/local/bin/openclaw-lxc-fixed-restore.sh`, ставит cron в `/etc/cron.d/openclaw-lxc-fixed-backup` на `04:00`, выполняет один стартовый прогон сразу.
 - `cleanup-openclaw-docker-backup.yml`
   - Hosts: `openclaw`
   - Назначение: удалить OpenClaw stack, таймеры/скрипты бэкапа и каталог `/srv/openclaw` (включая бэкапы).
@@ -148,6 +158,7 @@
 - Актуальный порядок для LXC:
   - сначала `setup-openclaw-lxc.yml`,
   - затем (опционально) `setup-openclaw-lxc-foundry-plugin.yml`.
+- На хостах с Docker возможна блокировка LXC egress из-за `FORWARD DROP`; в таком случае нужны правила в `DOCKER-USER` для `lxdbr0`.
 
 ## Чувствительные данные
 - Публичные SSH‑ключи хранятся в `group_vars/all.yml`.

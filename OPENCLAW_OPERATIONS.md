@@ -18,6 +18,8 @@ ansible-playbook -i inventory.ini setup-openclaw-lxc.yml --ask-vault-pass -e '{"
 - Runtime-конфиг OpenClaw (LXC): `/srv/openclaw/home/.openclaw/openclaw.json`
 - Extensions/plugins (LXC): `/srv/openclaw/home/.openclaw/extensions`
 - Unit сервиса в LXC: `/etc/systemd/system/openclaw.service`
+- Fixed backup script на хосте: `/usr/local/bin/openclaw-lxc-fixed-backup.sh`
+- Fixed restore script на хосте: `/usr/local/bin/openclaw-lxc-fixed-restore.sh`
 
 ### Быстрые post-check команды (LXC)
 ```bash
@@ -31,7 +33,44 @@ lxc exec openclaw -- journalctl -u openclaw.service -n 200 --no-pager | grep -E 
 ### Telegram allowlist
 - Список разрешенных Telegram user id задается в `group_vars/openclaw_vault.yml` (`openclaw_telegram_allow_from`).
 - Шаблон конфига заполняет allowlist автоматически.
-- Для снижения warning по автозагрузке плагинов в конфиге применяется `plugins.allow` (по умолчанию `telegram`, `foundry-openclaw` в LXC-плейбуке).
+- В базовом LXC-плейбуке `plugins.allow` по умолчанию содержит только `telegram`.
+- `foundry-openclaw` добавляется отдельным плейбуком `setup-openclaw-lxc-foundry-plugin.yml` после успешной установки плагина.
+
+### Важно по запуску плейбуков
+- `setup-openclaw-lxc.yml` не поддерживает `--check` (dry-run) из-за `lxc launch/start/exec` команд.
+- Используйте обычный запуск без `--check`.
+
+### Частая проблема на хостах с Docker
+- Симптом: в LXC есть DNS, но `curl -4I https://deb.nodesource.com` из контейнера дает timeout.
+- Причина: Docker выставляет `FORWARD DROP`, и трафик `lxdbr0` режется.
+- Временный фикс на хосте:
+```bash
+iptables -I DOCKER-USER 1 -i lxdbr0 -j ACCEPT
+iptables -I DOCKER-USER 1 -o lxdbr0 -j ACCEPT
+```
+- После этого повторите запуск `setup-openclaw-lxc.yml`.
+
+### Fixed backup/restore (LXC)
+- Деплой fixed backup+restore скриптов и cron:
+```bash
+ansible-playbook -i inventory.ini setup-openclaw-lxc-fixed-backup.yml -l <host>
+```
+- Принудительный запуск бэкапа:
+```bash
+sudo /usr/local/bin/openclaw-lxc-fixed-backup.sh --run-only
+```
+- Восстановление из daily:
+```bash
+sudo /usr/local/bin/openclaw-lxc-fixed-restore.sh
+```
+- Восстановление из initial:
+```bash
+sudo /usr/local/bin/openclaw-lxc-fixed-restore.sh --archive /srv/openclaw/backup-fixed/openclaw-initial.tar.gz
+```
+- Восстановление без pre-restore snapshot:
+```bash
+sudo /usr/local/bin/openclaw-lxc-fixed-restore.sh --no-pre-backup
+```
 
 ## Пути на хосте
 - Корневой каталог: `/srv/openclaw`

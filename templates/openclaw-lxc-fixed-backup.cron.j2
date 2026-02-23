@@ -1,0 +1,3 @@
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+{{ openclaw_fixed_backup_minute }} {{ openclaw_fixed_backup_hour }} * * * root env LXC_NAME={{ openclaw_lxc_name }} CONTAINER_DATA_ROOT={{ openclaw_root }} HOST_BACKUP_DIR={{ openclaw_fixed_backup_dir }} INITIAL_NAME={{ openclaw_fixed_backup_initial_name }} DAILY_NAME={{ openclaw_fixed_backup_daily_name }} CRON_FILE={{ openclaw_fixed_backup_cron_file }} {{ openclaw_fixed_backup_script_path }} --run-only >>/var/log/openclaw-fixed-backup.log 2>&1

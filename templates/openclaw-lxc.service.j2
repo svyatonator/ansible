@@ -2,14 +2,15 @@
 Description=OpenClaw gateway service (LXC)
 After=network-online.target
 Wants=network-online.target
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
 User=openclaw
 Group=openclaw
 WorkingDirectory={{ openclaw_root }}
-Restart=on-failure
 RestartSec=5
+Restart=always
 Environment=HOME=/home/openclaw
 Environment=PATH=/home/openclaw/.npm-global/bin:/home/openclaw/.local/bin:/home/openclaw/.bun/bin:/usr/local/bin:/usr/bin:/bin
 Environment=OPENCLAW_HOME={{ openclaw_home }}
