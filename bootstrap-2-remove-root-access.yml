@@ -12,6 +12,7 @@
     ansible_remote_tmp: "/home/{{ new_user }}/.ansible/tmp"
     ansible_ssh_common_args: "-o PreferredAuthentications=publickey -o PasswordAuthentication=no -o KbdInteractiveAuthentication=no -o IdentitiesOnly=yes"
     sshd_config_path: /etc/ssh/sshd_config
+    sshd_hardening_dropin_path: /etc/ssh/sshd_config.d/00-ansible-hardening.conf
     bootstrap_ssh_private_key_file: "{{ lookup('env', 'HOME') + '/.ssh/operator_key' }}"
     ansible_ssh_private_key_file: "{{ bootstrap_ssh_private_key_file }}"
 
@@ -52,6 +53,18 @@
         path: "{{ sshd_config_path }}"
         regexp: '^#?KbdInteractiveAuthentication\s+'
         line: 'KbdInteractiveAuthentication no'
+      notify: Restart sshd
+
+    - name: Enforce SSH hardening via early drop-in file (wins over cloud-init defaults)
+      ansible.builtin.copy:
+        dest: "{{ sshd_hardening_dropin_path }}"
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          PermitRootLogin no
+          PasswordAuthentication no
+          KbdInteractiveAuthentication no
       notify: Restart sshd
 
   handlers:

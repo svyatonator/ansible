@@ -1,0 +1,120 @@
+- name: Setup MTProto Telegram Proxy Docker
+  hosts: servers
+  gather_facts: true
+  become: true
+
+  vars:
+    mtproto_docker_root: /opt/mtproto-proxy
+    mtproto_container_name: mtproto-proxy
+    mtproto_port: 8443
+    mtproto_secret: ""
+    mtproto_secret_count: 2
+    # Tag version from https://hub.docker.com/r/telegrammessenger/proxy/tags
+    mtproto_image_tag: latest
+
+  tasks:
+    - name: Install Docker
+      ansible.builtin.apt:
+        name:
+          - docker.io
+        state: present
+        update_cache: true
+
+    - name: Ensure Docker is enabled and started
+      ansible.builtin.service:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Create MTProto proxy directory
+      ansible.builtin.file:
+        path: "{{ mtproto_docker_root }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Create data directory
+      ansible.builtin.file:
+        path: "{{ mtproto_docker_root }}/data"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Generate random secret if not provided
+      ansible.builtin.command: openssl rand -hex 16
+      register: generated_secret
+      changed_when: false
+      when: mtproto_secret | length == 0
+
+    - name: Set generated secret
+      ansible.builtin.set_fact:
+        mtproto_secret: "{{ generated_secret.stdout }}"
+      when: mtproto_secret | length == 0
+
+    - name: Check if MTProto proxy container exists
+      ansible.builtin.command: docker ps -a --filter "name={{ mtproto_container_name }}" --format "{% raw %}{{.Names}}{% endraw %}"
+      register: mtproto_container_check
+      changed_when: false
+
+    - name: Stop and remove existing container
+      ansible.builtin.command: docker rm -f {{ mtproto_container_name }}
+      when: mtproto_container_check.stdout == mtproto_container_name
+
+    - name: Pull MTProto proxy image
+      ansible.builtin.command: docker pull telegrammessenger/proxy:{{ mtproto_image_tag }}
+      register: pull_result
+      changed_when: "'Downloaded' in pull_result.stdout or 'Pulled' in pull_result.stdout"
+
+    - name: Run MTProto proxy container
+      ansible.builtin.command: >
+        docker run -d
+        --name {{ mtproto_container_name }}
+        --restart always
+        -p {{ mtproto_port }}:443
+        -e SECRET={{ mtproto_secret }}
+        -e SECRET_COUNT={{ mtproto_secret_count }}
+        -e EXTERNAL_PORT={{ mtproto_port }}
+        -v {{ mtproto_docker_root }}/data:/data
+        telegrammessenger/proxy:{{ mtproto_image_tag }}
+      register: mtproxy_start
+
+    - name: Wait for proxy to start
+      ansible.builtin.pause:
+        seconds: 5
+      when: mtproxy_start.changed
+
+    - name: Get proxy connection info from container logs
+      ansible.builtin.command: docker logs {{ mtproto_container_name }}
+      register: mtproto_logs
+      changed_when: false
+
+    - name: Print proxy connection info
+      ansible.builtin.debug:
+        msg: "{{ mtproto_logs.stdout_lines }}"
+
+    - name: Save proxy info to file
+      ansible.builtin.copy:
+        content: |
+          MTProto Proxy Configuration
+          ===========================
+          Server: {{ ansible_default_ipv4.address | default(ansible_host) }}
+          Port: {{ mtproto_port }}
+          Secret: {{ mtproto_secret }}
+          
+          Connection link (tg://proxy):
+          tg://proxy?server={{ ansible_default_ipv4.address | default(ansible_host) }}&port={{ mtproto_port }}&secret={{ mtproto_secret }}
+          
+          Connection link (https):
+          https://t.me/proxy?server={{ ansible_default_ipv4.address | default(ansible_host) }}&port={{ mtproto_port }}&secret={{ mtproto_secret }}
+          
+          Generated: {{ ansible_date_time.iso8601 }}
+        dest: "{{ mtproto_docker_root }}/proxy-info.txt"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Print saved proxy info location
+      ansible.builtin.debug:
+        msg: "Proxy info saved to {{ mtproto_docker_root }}/proxy-info.txt"

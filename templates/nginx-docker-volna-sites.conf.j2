@@ -11,6 +11,7 @@ server {
     return 444;
 }
 
+{% if nginx_enable_tls | default(false) %}
 server {
     listen 443 ssl default_server;
     listen [::]:443 ssl default_server;
@@ -23,6 +24,7 @@ server {
 
     return 444;
 }
+{% endif %}
 
 server {
     listen 80;
@@ -34,11 +36,21 @@ server {
         default_type "text/plain";
     }
 
+{% if nginx_enable_tls | default(false) %}
     location / {
         return 301 https://$host$request_uri;
     }
+{% else %}
+    root /var/www/volna.ovh;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+{% endif %}
 }
 
+{% if nginx_enable_tls | default(false) %}
 server {
     listen 443 ssl;
     listen [::]:443 ssl;
@@ -107,3 +119,4 @@ server {
         try_files $uri $uri/ =404;
     }
 }
+{% endif %}

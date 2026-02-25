@@ -7,6 +7,7 @@
     nginx_docker_root: /opt/nginx-docker
     nginx_container_name: nginx
     letsencrypt_webroot: /var/www/letsencrypt
+    certbot_email: ""
     certbot_cert_name: volna.ovh
     certbot_domains:
       - volna.ovh
@@ -29,6 +30,7 @@
         name:
           - docker.io
           - certbot
+          - openssl
         state: present
         update_cache: true
 
@@ -127,6 +129,33 @@
         group: root
         mode: "0755"
 
+    - name: Ensure letsencrypt directory exists
+      ansible.builtin.file:
+        path: /etc/letsencrypt
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install nginx TLS options file for certbot-compatible config
+      ansible.builtin.copy:
+        dest: /etc/letsencrypt/options-ssl-nginx.conf
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          ssl_session_cache shared:le_nginx_SSL:10m;
+          ssl_session_timeout 1440m;
+          ssl_session_tickets off;
+          ssl_protocols TLSv1.2 TLSv1.3;
+          ssl_prefer_server_ciphers off;
+          ssl_ciphers "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384";
+
+    - name: Generate dhparams file for nginx TLS if missing
+      ansible.builtin.command:
+        cmd: openssl dhparam -out /etc/letsencrypt/ssl-dhparams.pem 2048
+        creates: /etc/letsencrypt/ssl-dhparams.pem
+
     - name: Ensure static site directories exist
       ansible.builtin.file:
         path: "/var/www/{{ item.domain }}"
@@ -156,6 +185,15 @@
       loop:
         - "{{ nginx_docker_root }}"
         - "{{ nginx_docker_root }}/conf.d"
+
+    - name: Check if certificate already exists
+      ansible.builtin.stat:
+        path: "/etc/letsencrypt/live/{{ certbot_cert_name }}/fullchain.pem"
+      register: certbot_existing_cert
+
+    - name: Set TLS mode for nginx config
+      ansible.builtin.set_fact:
+        nginx_enable_tls: "{{ certbot_existing_cert.stat.exists | bool }}"
 
     - name: Write nginx main config
       ansible.builtin.template:
@@ -209,6 +247,73 @@
       ansible.builtin.debug:
         msg: "{{ nginx_test.stderr_lines }}"
 
+    - name: Require certbot_email for first certificate issuance
+      ansible.builtin.fail:
+        msg: "First certificate issuance requires contact email. Run with -e certbot_email=admin@volna.ovh"
+      when:
+        - not certbot_existing_cert.stat.exists
+        - certbot_email | length == 0
+
+    - name: Issue initial certificate with webroot when missing
+      ansible.builtin.command:
+        argv:
+          - certbot
+          - certonly
+          - --webroot
+          - -w
+          - "{{ letsencrypt_webroot }}"
+          - -d
+          - "{{ certbot_domains[0] }}"
+          - -d
+          - "{{ certbot_domains[1] }}"
+          - -d
+          - "{{ certbot_domains[2] }}"
+          - --cert-name
+          - "{{ certbot_cert_name }}"
+          - --email
+          - "{{ certbot_email }}"
+          - --agree-tos
+          - --non-interactive
+      register: certbot_initial_issue
+      changed_when: true
+      when: not certbot_existing_cert.stat.exists
+
+    - name: Print initial certbot issue result
+      ansible.builtin.debug:
+        msg: "{{ certbot_initial_issue.stdout_lines }}"
+      when: certbot_initial_issue is defined and not certbot_initial_issue.skipped
+
+    - name: Enable TLS mode after initial certificate issuance
+      ansible.builtin.set_fact:
+        nginx_enable_tls: true
+      when: certbot_initial_issue is defined and not certbot_initial_issue.skipped
+
+    - name: Rewrite nginx domain config with TLS after initial certificate issuance
+      ansible.builtin.template:
+        src: templates/nginx-docker-volna-sites.conf.j2
+        dest: "{{ nginx_docker_root }}/conf.d/volna-sites.conf"
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart nginx docker stack
+      when: certbot_initial_issue is defined and not certbot_initial_issue.skipped
+
+    - name: Apply nginx TLS config after initial certificate issuance
+      ansible.builtin.meta: flush_handlers
+      when: certbot_initial_issue is defined and not certbot_initial_issue.skipped
+
+    - name: Validate nginx config inside container after enabling TLS
+      ansible.builtin.command:
+        cmd: docker exec {{ nginx_container_name }} nginx -t
+      register: nginx_test_tls
+      changed_when: false
+      when: certbot_initial_issue is defined and not certbot_initial_issue.skipped
+
+    - name: Print nginx TLS config test output
+      ansible.builtin.debug:
+        msg: "{{ nginx_test_tls.stderr_lines }}"
+      when: certbot_initial_issue is defined and not certbot_initial_issue.skipped
+
     - name: Ensure certbot deploy hook directory exists
       ansible.builtin.file:
         path: /etc/letsencrypt/renewal-hooks/deploy
@@ -230,6 +335,11 @@
           fi
           exit 0
 
+    - name: Check renewal config exists
+      ansible.builtin.stat:
+        path: "/etc/letsencrypt/renewal/{{ certbot_cert_name }}.conf"
+      register: certbot_renewal_conf
+
     - name: Force renewal config to use webroot authenticator
       ansible.builtin.ini_file:
         path: "/etc/letsencrypt/renewal/{{ certbot_cert_name }}.conf"
@@ -237,6 +347,7 @@
         option: authenticator
         value: webroot
         mode: "0644"
+      when: certbot_renewal_conf.stat.exists
 
     - name: Remove nginx installer from renewal config
       ansible.builtin.ini_file:
@@ -245,6 +356,7 @@
         option: installer
         state: absent
         mode: "0644"
+      when: certbot_renewal_conf.stat.exists
 
     - name: Set webroot path in renewal config
       ansible.builtin.ini_file:
@@ -253,6 +365,7 @@
         option: webroot_path
         value: "{{ letsencrypt_webroot }}"
         mode: "0644"
+      when: certbot_renewal_conf.stat.exists
 
     - name: Re-issue certificate once with webroot to finalize migration
       ansible.builtin.command:
@@ -274,6 +387,9 @@
           - --non-interactive
       register: certbot_config
       changed_when: true
+      when:
+        - certbot_renewal_conf.stat.exists
+        - certbot_existing_cert.stat.exists
 
     - name: Print certbot reconfigure result
       ansible.builtin.debug:
