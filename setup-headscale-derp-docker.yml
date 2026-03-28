@@ -1,0 +1,245 @@
+- name: Setup Headscale with embedded DERP in Docker
+  hosts: servers
+  gather_facts: true
+  become: true
+
+  vars:
+    headscale_docker_root: /opt/headscale-docker
+    headscale_container_name: headscale
+    nginx_container_name: nginx
+    headscale_image: ghcr.io/juanfont/headscale:0.27.1
+    headscale_server_url: https://hs.volna.ovh
+    headscale_derp_hostname: dp.volna.ovh
+    headscale_base_domain: tail.volna.ovh
+    headscale_derp_region_id: 900
+    headscale_derp_region_code: rif
+    headscale_derp_region_name: rif DERP
+    headscale_prefix_v4: 100.64.0.0/10
+    headscale_prefix_v6: fd7a:115c:a1e0::/48
+    headscale_metrics_bind: 127.0.0.1:9090
+    headscale_derp_stun_port: 3478
+    headscale_public_ipv4: "{{ ansible_facts.get('default_ipv4', {}).get('address', ansible_host) }}"
+    headscale_public_ipv6: "{{ ansible_facts.get('default_ipv6', {}).get('address', '') }}"
+    headscale_extra_derp_regions:
+      - region_id: 901
+        region_code: priboi
+        region_name: priboi DERP
+        hostname: dp2.volna.ovh
+        ipv4: 212.15.49.66
+        stun_port: 3478
+    headscale_include_default_derp_map: true
+    headscale_acl_mode: permissive
+    compose_plugin_version: v2.33.1
+    compose_arch_map:
+      x86_64: x86_64
+      amd64: x86_64
+      aarch64: aarch64
+      arm64: aarch64
+
+  tasks:
+    - name: Install Docker
+      ansible.builtin.apt:
+        name:
+          - docker.io
+        state: present
+        update_cache: true
+
+    - name: Try to install Docker Compose plugin package
+      ansible.builtin.apt:
+        name: docker-compose-plugin
+        state: present
+      register: compose_plugin_install
+      failed_when: false
+
+    - name: Install legacy docker-compose package when plugin is unavailable
+      ansible.builtin.apt:
+        name: docker-compose
+        state: present
+      when: compose_plugin_install.rc is defined and compose_plugin_install.rc != 0
+
+    - name: Ensure Docker is enabled and started
+      ansible.builtin.service:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Detect Docker Compose v2 command
+      ansible.builtin.shell: |
+        if docker compose version >/dev/null 2>&1; then
+          echo "docker compose"
+        else
+          exit 1
+        fi
+      register: docker_compose_detect
+      changed_when: false
+      failed_when: false
+
+    - name: Ensure Docker CLI plugins directory exists
+      ansible.builtin.file:
+        path: /usr/local/lib/docker/cli-plugins
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      when: docker_compose_detect.rc != 0
+
+    - name: Install Docker Compose v2 CLI plugin binary fallback
+      ansible.builtin.get_url:
+        url: "https://github.com/docker/compose/releases/download/{{ compose_plugin_version }}/docker-compose-linux-{{ compose_arch_map.get(ansible_facts['architecture'], 'x86_64') }}"
+        dest: /usr/local/lib/docker/cli-plugins/docker-compose
+        owner: root
+        group: root
+        mode: "0755"
+      when: docker_compose_detect.rc != 0
+
+    - name: Re-detect Docker Compose v2 command after plugin fallback
+      ansible.builtin.shell: |
+        if docker compose version >/dev/null 2>&1; then
+          echo "docker compose"
+        else
+          exit 1
+        fi
+      register: docker_compose_detect_retry
+      changed_when: false
+      failed_when: false
+      when: docker_compose_detect.rc != 0
+
+    - name: Choose effective Docker Compose detection result
+      ansible.builtin.set_fact:
+        docker_compose_detect_effective: "{{ docker_compose_detect_retry if docker_compose_detect.rc != 0 else docker_compose_detect }}"
+
+    - name: Fail if Docker Compose is still unavailable
+      ansible.builtin.fail:
+        msg: "Neither 'docker compose' nor 'docker-compose' is available after fallback installation."
+      when: docker_compose_detect_effective.rc != 0
+
+    - name: Set Docker Compose command fact
+      ansible.builtin.set_fact:
+        docker_compose_cmd: "{{ docker_compose_detect_effective.stdout }}"
+
+    - name: Allow DERP STUN traffic through UFW (if UFW is active)
+      ansible.builtin.ufw:
+        rule: allow
+        port: "{{ headscale_derp_stun_port | string }}"
+        proto: udp
+      ignore_errors: true
+
+    - name: Create Headscale project directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - "{{ headscale_docker_root }}"
+        - "{{ headscale_docker_root }}/config"
+        - "{{ headscale_docker_root }}/lib"
+        - "{{ headscale_docker_root }}/run"
+
+    - name: Write Headscale config
+      ansible.builtin.template:
+        src: templates/headscale-config.yaml.j2
+        dest: "{{ headscale_docker_root }}/config/config.yaml"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Write custom DERP map
+      ansible.builtin.template:
+        src: templates/headscale-derp-map.yaml.j2
+        dest: "{{ headscale_docker_root }}/config/derp.yaml"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Write permissive ACL policy
+      ansible.builtin.template:
+        src: templates/headscale-acl.hujson.j2
+        dest: "{{ headscale_docker_root }}/config/acl.hujson"
+        owner: root
+        group: root
+        mode: "0644"
+      when: headscale_acl_mode == "permissive"
+
+    - name: Write Docker Compose file for Headscale
+      ansible.builtin.template:
+        src: templates/docker-compose-headscale-derp.yml.j2
+        dest: "{{ headscale_docker_root }}/docker-compose.yml"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Pull Headscale image
+      ansible.builtin.command:
+        cmd: "{{ docker_compose_cmd }} pull"
+        chdir: "{{ headscale_docker_root }}"
+      register: headscale_pull
+      changed_when: "'Downloaded' in headscale_pull.stdout or 'Pulled' in headscale_pull.stdout or 'Pulling' in headscale_pull.stdout"
+
+    - name: Ensure Headscale docker stack is up
+      ansible.builtin.command:
+        cmd: "{{ docker_compose_cmd }} up -d"
+        chdir: "{{ headscale_docker_root }}"
+
+    - name: Validate Headscale config inside container
+      ansible.builtin.command:
+        cmd: docker exec {{ headscale_container_name }} headscale configtest
+      register: headscale_configtest
+      changed_when: false
+
+    - name: Check if nginx container exists
+      ansible.builtin.command:
+        argv:
+          - docker
+          - ps
+          - -a
+          - --filter
+          - "name=^/{{ nginx_container_name }}$"
+          - --format
+          - "{% raw %}{{.Names}}{% endraw %}"
+      register: nginx_container_check
+      changed_when: false
+
+    - name: Require existing nginx container for reverse proxy setup
+      ansible.builtin.fail:
+        msg: "Nginx docker container '{{ nginx_container_name }}' was not found. Run the nginx docker playbook first."
+      when: nginx_container_check.stdout != nginx_container_name
+
+    - name: Get nginx container networks
+      ansible.builtin.command:
+        argv:
+          - docker
+          - inspect
+          - --format
+          - "{% raw %}{{range $k, $v := .NetworkSettings.Networks}}{{println $k}}{{end}}{% endraw %}"
+          - "{{ nginx_container_name }}"
+      register: nginx_networks
+      changed_when: false
+
+    - name: Set nginx network list
+      ansible.builtin.set_fact:
+        nginx_container_networks: "{{ nginx_networks.stdout_lines | map('trim') | reject('equalto', '') | list }}"
+
+    - name: Require nginx to be attached to at least one Docker network
+      ansible.builtin.fail:
+        msg: "The nginx container is not attached to any Docker network."
+      when: nginx_container_networks | length == 0
+
+    - name: Connect Headscale container to nginx networks
+      ansible.builtin.command:
+        cmd: docker network connect {{ item }} {{ headscale_container_name }}
+      loop: "{{ nginx_container_networks }}"
+      register: headscale_network_connect
+      changed_when: headscale_network_connect.rc == 0
+      failed_when: >
+        headscale_network_connect.rc != 0 and
+        'already exists' not in ((headscale_network_connect.stderr | default('')) ~ (headscale_network_connect.stdout | default('')))
+
+    - name: Show Headscale access summary
+      ansible.builtin.debug:
+        msg:
+          - "Headscale control plane: {{ headscale_server_url }}"
+          - "DERP hostname: https://{{ headscale_derp_hostname }}"
+          - "DERP STUN udp/{{ headscale_derp_stun_port }} is published on the host"
+          - "Use docker exec {{ headscale_container_name }} headscale users create <user> to create the first user"

@@ -1,0 +1,17 @@
+ansible_user: slava
+ansible_become: true
+ansible_become_method: sudo
+ansible_ssh_transfer_method: piped
+ansible_ssh_timeout: 60
+ansible_remote_tmp: /tmp/ansible-tmp
+
+ansible_ssh_common_args: >-
+  -o ProxyCommand="ssh -i /home/slava/.ssh/operator_key -o IdentitiesOnly=yes -o PreferredAuthentications=publickey -o PasswordAuthentication=no -o ServerAliveInterval=20 -o ServerAliveCountMax=3 -W %h:%p slava@212.15.49.66"
+  -o IdentitiesOnly=yes
+  -o PreferredAuthentications=password
+  -o PubkeyAuthentication=no
+  -o ConnectTimeout=30
+  -o ServerAliveInterval=20
+  -o ServerAliveCountMax=3
+  -o StrictHostKeyChecking=no
+  -o UserKnownHostsFile=/dev/null

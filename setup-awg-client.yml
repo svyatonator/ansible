@@ -1,0 +1,205 @@
+- name: Setup AmneziaWG client on Ubuntu hosts
+  hosts: ostrov
+  gather_facts: true
+  become: true
+
+  vars:
+    awg_interface_name: "{{ awg_interface | default('awg0') }}"
+    awg_go_repo: https://github.com/amnezia-vpn/amneziawg-go.git
+    awg_go_version: master
+    awg_go_src_dir: /usr/local/src/amneziawg-go
+    awg_go_binary_path: /usr/local/bin/amneziawg-go
+    awg_import_binary_path: /usr/local/bin/amneziawg-import-config
+    awg_config_dir: /etc/amneziawg
+    awg_scripts_dir: /usr/local/libexec/amneziawg
+    awg_service_template_name: amneziawg-client
+    awg_service_name: "{{ awg_service_template_name }}@{{ awg_interface_name }}"
+    awg_client_routes: "{{ awg_route_cidrs | default(awg_allowed_ips) }}"
+    awg_seed_config_from_vars: >-
+      {{
+        awg_private_key is defined and
+        awg_private_key is string and
+        awg_private_key | trim not in ['', 'REPLACE_ME']
+      }}
+    awg_required_vars:
+      - awg_private_key
+      - awg_client_addresses
+      - awg_server_public_key
+      - awg_endpoint_host
+      - awg_endpoint_port
+      - awg_allowed_ips
+
+  pre_tasks:
+    - name: Validate required AWG variables
+      ansible.builtin.assert:
+        that:
+          - vars[item] is defined
+          - >
+            (
+              vars[item] is number
+            ) or (
+              vars[item] is string and vars[item] | trim | length > 0
+            ) or (
+              vars[item] is sequence and vars[item] is not string and vars[item] | length > 0
+            )
+        fail_msg: "Define {{ item }} for host {{ inventory_hostname }} before running setup-awg-client.yml"
+      loop: "{{ awg_required_vars }}"
+      when: awg_seed_config_from_vars | bool
+
+    - name: Normalize AWG client addresses to a list
+      ansible.builtin.set_fact:
+        awg_client_addresses_list: "{{ awg_client_addresses if awg_client_addresses is sequence and awg_client_addresses is not string else [awg_client_addresses] }}"
+      when: awg_seed_config_from_vars | bool
+
+    - name: Normalize AWG allowed IPs to a list
+      ansible.builtin.set_fact:
+        awg_allowed_ips_list: "{{ awg_allowed_ips if awg_allowed_ips is sequence and awg_allowed_ips is not string else [awg_allowed_ips] }}"
+      when: awg_seed_config_from_vars | bool
+
+    - name: Normalize AWG routes to a list
+      ansible.builtin.set_fact:
+        awg_client_routes_list: "{{ awg_client_routes if awg_client_routes is sequence and awg_client_routes is not string else [awg_client_routes] }}"
+      when: awg_seed_config_from_vars | bool
+
+  tasks:
+    - name: Install base packages
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - git
+          - golang-go
+          - iproute2
+          - make
+          - software-properties-common
+        state: present
+        update_cache: true
+
+    - name: Add official Amnezia PPA
+      ansible.builtin.apt_repository:
+        repo: ppa:amnezia/ppa
+        state: present
+        update_cache: true
+
+    - name: Install AmneziaWG tools
+      ansible.builtin.apt:
+        name: amneziawg-tools
+        state: present
+        update_cache: true
+
+    - name: Checkout amneziawg-go source
+      ansible.builtin.git:
+        repo: "{{ awg_go_repo }}"
+        dest: "{{ awg_go_src_dir }}"
+        version: "{{ awg_go_version }}"
+        force: false
+
+    - name: Build amneziawg-go
+      ansible.builtin.command:
+        cmd: make
+        chdir: "{{ awg_go_src_dir }}"
+      register: awg_go_build
+      changed_when: "'Nothing to be done' not in awg_go_build.stdout"
+
+    - name: Install amneziawg-go binary
+      ansible.builtin.copy:
+        src: "{{ awg_go_src_dir }}/amneziawg-go"
+        dest: "{{ awg_go_binary_path }}"
+        owner: root
+        group: root
+        mode: '0755'
+        remote_src: true
+      notify: Restart AWG client
+
+    - name: Create AWG directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "{{ item.mode }}"
+      loop:
+        - { path: "{{ awg_config_dir }}", mode: "0700" }
+        - { path: "{{ awg_scripts_dir }}", mode: "0755" }
+
+    - name: Render AWG runtime env
+      ansible.builtin.template:
+        src: templates/awg-client.env.j2
+        dest: "{{ awg_config_dir }}/{{ awg_interface_name }}.env"
+        owner: root
+        group: root
+        mode: '0600'
+      when: awg_seed_config_from_vars | bool
+      notify: Restart AWG client
+
+    - name: Render AWG interface config
+      ansible.builtin.template:
+        src: templates/awg-client.conf.j2
+        dest: "{{ awg_config_dir }}/{{ awg_interface_name }}.conf"
+        owner: root
+        group: root
+        mode: '0600'
+      when: awg_seed_config_from_vars | bool
+      notify: Restart AWG client
+
+    - name: Render AWG up script
+      ansible.builtin.template:
+        src: templates/awg-client-up.sh.j2
+        dest: "{{ awg_scripts_dir }}/{{ awg_interface_name }}-up.sh"
+        owner: root
+        group: root
+        mode: '0755'
+      notify: Restart AWG client
+
+    - name: Install AWG import helper
+      ansible.builtin.template:
+        src: templates/amneziawg-import-config.py.j2
+        dest: "{{ awg_import_binary_path }}"
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Render AWG down script
+      ansible.builtin.template:
+        src: templates/awg-client-down.sh.j2
+        dest: "{{ awg_scripts_dir }}/{{ awg_interface_name }}-down.sh"
+        owner: root
+        group: root
+        mode: '0755'
+      notify: Restart AWG client
+
+    - name: Render AWG client systemd service
+      ansible.builtin.template:
+        src: templates/amneziawg-client.service.j2
+        dest: "/etc/systemd/system/{{ awg_service_template_name }}@.service"
+        owner: root
+        group: root
+        mode: '0644'
+      notify:
+        - Reload systemd
+        - Restart AWG client
+
+    - name: Ensure AWG client service is enabled and started
+      ansible.builtin.systemd:
+        name: "{{ awg_service_name }}.service"
+        enabled: true
+        state: started
+        daemon_reload: true
+      when: awg_seed_config_from_vars | bool
+
+    - name: Report skipped initial AWG startup
+      ansible.builtin.debug:
+        msg:
+          - "AWG runtime and import helper were installed, but the client was not started."
+          - "Import a real config on the host with: sudo {{ awg_import_binary_path }} /path/to/client.conf --restart"
+      when: not awg_seed_config_from_vars | bool
+
+  handlers:
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Restart AWG client
+      ansible.builtin.systemd:
+        name: "{{ awg_service_name }}.service"
+        state: restarted
+      when: awg_seed_config_from_vars | bool

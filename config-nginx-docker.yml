@@ -1,0 +1,220 @@
+- name: Configure Docker nginx for Headscale and DERP
+  hosts: servers
+  gather_facts: true
+  become: true
+
+  vars:
+    nginx_docker_root: /opt/nginx-docker
+    nginx_container_name: nginx
+    letsencrypt_webroot: /var/www/letsencrypt
+    headscale_container_name: headscale
+    headscale_domain: hs.volna.ovh
+    derp_domain: dp.volna.ovh
+    headscale_certbot_cert_name: hs.volna.ovh
+    headscale_certbot_domains:
+      - hs.volna.ovh
+      - dp.volna.ovh
+    headscale_backend_name: headscale
+    headscale_backend_port: 8080
+
+  tasks:
+    - name: Install certbot
+      ansible.builtin.apt:
+        name:
+          - certbot
+        state: present
+        update_cache: true
+
+    - name: Check if nginx docker config directory exists
+      ansible.builtin.stat:
+        path: "{{ nginx_docker_root }}/conf.d"
+      register: nginx_docker_conf_dir
+
+    - name: Require existing nginx docker root
+      ansible.builtin.fail:
+        msg: "Nginx docker config was not found at {{ nginx_docker_root }}. Run setup-nginx-docker-volna-ovh.yml first."
+      when: not nginx_docker_conf_dir.stat.exists
+
+    - name: Check if nginx container is running
+      ansible.builtin.command:
+        argv:
+          - docker
+          - ps
+          - --filter
+          - "name=^/{{ nginx_container_name }}$"
+          - --format
+          - "{% raw %}{{.Names}}{% endraw %}"
+      register: nginx_running
+      changed_when: false
+
+    - name: Require running nginx container
+      ansible.builtin.fail:
+        msg: "Docker container '{{ nginx_container_name }}' is not running."
+      when: nginx_running.stdout != nginx_container_name
+
+    - name: Check if Headscale container exists
+      ansible.builtin.command:
+        argv:
+          - docker
+          - ps
+          - -a
+          - --filter
+          - "name=^/{{ headscale_container_name }}$"
+          - --format
+          - "{% raw %}{{.Names}}{% endraw %}"
+      register: headscale_container_check
+      changed_when: false
+
+    - name: Require Headscale container before nginx proxy config
+      ansible.builtin.fail:
+        msg: "Headscale container '{{ headscale_container_name }}' was not found. Run setup-headscale-derp-docker.yml first."
+      when: headscale_container_check.stdout != headscale_container_name
+
+    - name: Ensure webroot for ACME challenge exists
+      ansible.builtin.file:
+        path: "{{ letsencrypt_webroot }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Check if Headscale certificate already exists
+      ansible.builtin.stat:
+        path: "/etc/letsencrypt/live/{{ headscale_certbot_cert_name }}/fullchain.pem"
+      register: headscale_existing_cert
+
+    - name: Set TLS mode for Headscale nginx config
+      ansible.builtin.set_fact:
+        headscale_nginx_enable_tls: "{{ headscale_existing_cert.stat.exists | bool }}"
+
+    - name: Write nginx config for Headscale and DERP
+      ansible.builtin.template:
+        src: templates/nginx-docker-headscale-derp.conf.j2
+        dest: "{{ nginx_docker_root }}/conf.d/headscale-derp.conf"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Validate nginx config before initial certificate issuance
+      ansible.builtin.command:
+        cmd: docker exec {{ nginx_container_name }} nginx -t
+      register: nginx_test_before_cert
+      changed_when: false
+
+    - name: Reload nginx before initial certificate issuance
+      ansible.builtin.command:
+        cmd: docker exec {{ nginx_container_name }} nginx -s reload
+      changed_when: true
+
+    - name: Require certbot_email for first certificate issuance
+      ansible.builtin.fail:
+        msg: "First certificate issuance requires contact email. Run with -e certbot_email=admin@volna.ovh"
+      when:
+        - not headscale_existing_cert.stat.exists
+        - certbot_email | default('') | length == 0
+
+    - name: Issue initial certificate for Headscale and DERP when missing
+      ansible.builtin.command:
+        argv:
+          - certbot
+          - certonly
+          - --webroot
+          - -w
+          - "{{ letsencrypt_webroot }}"
+          - -d
+          - "{{ headscale_certbot_domains[0] }}"
+          - -d
+          - "{{ headscale_certbot_domains[1] }}"
+          - --cert-name
+          - "{{ headscale_certbot_cert_name }}"
+          - --email
+          - "{{ certbot_email | default('') }}"
+          - --agree-tos
+          - --non-interactive
+      register: headscale_cert_issue
+      changed_when: true
+      when: not headscale_existing_cert.stat.exists
+
+    - name: Check renewal config exists for Headscale certificate
+      ansible.builtin.stat:
+        path: "/etc/letsencrypt/renewal/{{ headscale_certbot_cert_name }}.conf"
+      register: headscale_renewal_conf
+
+    - name: Force Headscale renewal config to use webroot authenticator
+      ansible.builtin.ini_file:
+        path: "/etc/letsencrypt/renewal/{{ headscale_certbot_cert_name }}.conf"
+        section: renewalparams
+        option: authenticator
+        value: webroot
+        mode: "0644"
+      when: headscale_renewal_conf.stat.exists
+
+    - name: Remove installer from Headscale renewal config
+      ansible.builtin.ini_file:
+        path: "/etc/letsencrypt/renewal/{{ headscale_certbot_cert_name }}.conf"
+        section: renewalparams
+        option: installer
+        state: absent
+        mode: "0644"
+      when: headscale_renewal_conf.stat.exists
+
+    - name: Set webroot path in Headscale renewal config
+      ansible.builtin.ini_file:
+        path: "/etc/letsencrypt/renewal/{{ headscale_certbot_cert_name }}.conf"
+        section: renewalparams
+        option: webroot_path
+        value: "{{ letsencrypt_webroot }}"
+        mode: "0644"
+      when: headscale_renewal_conf.stat.exists
+
+    - name: Enable TLS mode after initial certificate issuance
+      ansible.builtin.set_fact:
+        headscale_nginx_enable_tls: true
+      when: headscale_cert_issue is defined and not (headscale_cert_issue.skipped | default(false))
+
+    - name: Rewrite nginx config with TLS
+      ansible.builtin.template:
+        src: templates/nginx-docker-headscale-derp.conf.j2
+        dest: "{{ nginx_docker_root }}/conf.d/headscale-derp.conf"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Validate nginx config after enabling TLS
+      ansible.builtin.command:
+        cmd: docker exec {{ nginx_container_name }} nginx -t
+      register: nginx_test_after_cert
+      changed_when: false
+
+    - name: Reload nginx after enabling TLS
+      ansible.builtin.command:
+        cmd: docker exec {{ nginx_container_name }} nginx -s reload
+      changed_when: true
+
+    - name: Ensure certbot deploy hook directory exists
+      ansible.builtin.file:
+        path: /etc/letsencrypt/renewal-hooks/deploy
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install deploy hook to reload docker nginx after renew
+      ansible.builtin.copy:
+        dest: /etc/letsencrypt/renewal-hooks/deploy/reload-nginx-docker.sh
+        owner: root
+        group: root
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          if docker ps --format '{{ "{{" }}.Names{{ "}}" }}' | grep -qx '{{ nginx_container_name }}'; then
+            docker exec {{ nginx_container_name }} nginx -s reload >/dev/null 2>&1 || true
+          fi
+          exit 0
+
+    - name: Show nginx proxy summary
+      ansible.builtin.debug:
+        msg:
+          - "https://{{ headscale_domain }} is proxied to {{ headscale_backend_name }}:{{ headscale_backend_port }}"
+          - "https://{{ derp_domain }} is proxied to {{ headscale_backend_name }}:{{ headscale_backend_port }}"
+          - "Certificate name: {{ headscale_certbot_cert_name }}"

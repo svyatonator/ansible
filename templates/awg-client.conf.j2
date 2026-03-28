@@ -1,0 +1,59 @@
+[Interface]
+PrivateKey = {{ awg_private_key }}
+{% if awg_jc is defined %}
+Jc = {{ awg_jc }}
+{% endif %}
+{% if awg_jmin is defined %}
+Jmin = {{ awg_jmin }}
+{% endif %}
+{% if awg_jmax is defined %}
+Jmax = {{ awg_jmax }}
+{% endif %}
+{% if awg_s1 is defined %}
+S1 = {{ awg_s1 }}
+{% endif %}
+{% if awg_s2 is defined %}
+S2 = {{ awg_s2 }}
+{% endif %}
+{% if awg_s3 is defined %}
+S3 = {{ awg_s3 }}
+{% endif %}
+{% if awg_s4 is defined %}
+S4 = {{ awg_s4 }}
+{% endif %}
+{% if awg_h1 is defined %}
+H1 = {{ awg_h1 }}
+{% endif %}
+{% if awg_h2 is defined %}
+H2 = {{ awg_h2 }}
+{% endif %}
+{% if awg_h3 is defined %}
+H3 = {{ awg_h3 }}
+{% endif %}
+{% if awg_h4 is defined %}
+H4 = {{ awg_h4 }}
+{% endif %}
+{% if awg_i1 is defined %}
+I1 = {{ awg_i1 }}
+{% endif %}
+{% if awg_i2 is defined %}
+I2 = {{ awg_i2 }}
+{% endif %}
+{% if awg_i3 is defined %}
+I3 = {{ awg_i3 }}
+{% endif %}
+{% if awg_i4 is defined %}
+I4 = {{ awg_i4 }}
+{% endif %}
+{% if awg_i5 is defined %}
+I5 = {{ awg_i5 }}
+{% endif %}
+
+[Peer]
+PublicKey = {{ awg_server_public_key }}
+{% if awg_preshared_key is defined %}
+PresharedKey = {{ awg_preshared_key }}
+{% endif %}
+Endpoint = {{ awg_endpoint_host }}:{{ awg_endpoint_port }}
+AllowedIPs = {{ awg_allowed_ips_list | join(', ') }}
+PersistentKeepalive = {{ awg_persistent_keepalive | default(25) }}

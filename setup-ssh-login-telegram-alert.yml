@@ -1,6 +1,6 @@
 ---
 - name: Deploy SSH successful login Telegram notifier
-  hosts: servers
+  hosts: "{{ target_hosts | default('servers') }}"
   become: true
   vars_files:
     - group_vars/telegram-bot-alert_vault.yml

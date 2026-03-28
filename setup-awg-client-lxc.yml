@@ -1,0 +1,220 @@
+- name: Setup AmneziaWG client inside LXC containers
+  hosts: ostrov_lxc
+  gather_facts: true
+  become: true
+
+  vars_prompt:
+    - name: awg_local_config_path
+      prompt: "Local path to AWG client config file (leave empty to create placeholder)"
+      private: false
+
+  vars:
+    awg_interface_name: awg0
+    awg_go_repo: https://github.com/amnezia-vpn/amneziawg-go.git
+    awg_go_version: master
+    awg_go_src_dir: /usr/local/src/amneziawg-go
+    awg_go_binary_path: /usr/local/bin/amneziawg-go
+    awg_import_binary_path: /usr/local/bin/amneziawg-import-config
+    awg_config_dir: /etc/amneziawg
+    awg_scripts_dir: /usr/local/libexec/amneziawg
+    awg_service_template_name: amneziawg-client
+    awg_service_name: "{{ awg_service_template_name }}@{{ awg_interface_name }}"
+    awg_temp_import_path: /tmp/awg-client-import.conf
+    awg_placeholder_config_path: "{{ awg_config_dir }}/{{ awg_interface_name }}.conf.example"
+    awg_placeholder_env_path: "{{ awg_config_dir }}/{{ awg_interface_name }}.env.example"
+
+  pre_tasks:
+    - name: Check whether AWG config exists on the controller
+      ansible.builtin.stat:
+        path: "{{ awg_local_config_path | trim }}"
+      register: awg_local_config_stat
+      delegate_to: localhost
+      become: false
+      when: awg_local_config_path | trim | length > 0
+      run_once: true
+
+    - name: Remember whether AWG config is available on the controller
+      ansible.builtin.set_fact:
+        awg_config_available: >-
+          {{
+            awg_local_config_path | trim | length > 0 and
+            awg_local_config_stat is defined and
+            awg_local_config_stat.stat.exists and
+            awg_local_config_stat.stat.isreg
+          }}
+
+  tasks:
+    - name: Install base packages
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - git
+          - golang-go
+          - iproute2
+          - make
+          - software-properties-common
+        state: present
+        update_cache: true
+
+    - name: Add official Amnezia PPA
+      ansible.builtin.apt_repository:
+        repo: ppa:amnezia/ppa
+        state: present
+        update_cache: true
+
+    - name: Install AmneziaWG tools
+      ansible.builtin.apt:
+        name: amneziawg-tools
+        state: present
+        update_cache: true
+
+    - name: Checkout amneziawg-go source
+      ansible.builtin.git:
+        repo: "{{ awg_go_repo }}"
+        dest: "{{ awg_go_src_dir }}"
+        version: "{{ awg_go_version }}"
+        force: false
+
+    - name: Build amneziawg-go
+      ansible.builtin.command:
+        cmd: make
+        chdir: "{{ awg_go_src_dir }}"
+      register: awg_go_build
+      changed_when: "'Nothing to be done' not in awg_go_build.stdout"
+
+    - name: Install amneziawg-go binary
+      ansible.builtin.copy:
+        src: "{{ awg_go_src_dir }}/amneziawg-go"
+        dest: "{{ awg_go_binary_path }}"
+        owner: root
+        group: root
+        mode: "0755"
+        remote_src: true
+
+    - name: Create AWG directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "{{ item.mode }}"
+      loop:
+        - { path: "{{ awg_config_dir }}", mode: "0700" }
+        - { path: "{{ awg_scripts_dir }}", mode: "0755" }
+
+    - name: Render AWG up script
+      ansible.builtin.template:
+        src: templates/awg-client-up.sh.j2
+        dest: "{{ awg_scripts_dir }}/{{ awg_interface_name }}-up.sh"
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Render AWG down script
+      ansible.builtin.template:
+        src: templates/awg-client-down.sh.j2
+        dest: "{{ awg_scripts_dir }}/{{ awg_interface_name }}-down.sh"
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install AWG import helper
+      ansible.builtin.template:
+        src: templates/amneziawg-import-config.py.j2
+        dest: "{{ awg_import_binary_path }}"
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Render AWG client systemd service
+      ansible.builtin.template:
+        src: templates/amneziawg-client.service.j2
+        dest: "/etc/systemd/system/{{ awg_service_template_name }}@.service"
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload systemd
+
+    - name: Upload AWG config from controller when provided
+      ansible.builtin.copy:
+        src: "{{ awg_local_config_path | trim }}"
+        dest: "{{ awg_temp_import_path }}"
+        owner: root
+        group: root
+        mode: "0600"
+      when: awg_config_available | bool
+
+    - name: Import AWG config and restart service
+      ansible.builtin.command:
+        cmd: >-
+          {{ awg_import_binary_path }}
+          {{ awg_temp_import_path }}
+          --interface {{ awg_interface_name }}
+          --restart
+      when: awg_config_available | bool
+
+    - name: Enable AWG service when real config was imported
+      ansible.builtin.systemd:
+        name: "{{ awg_service_name }}.service"
+        enabled: true
+        state: started
+        daemon_reload: true
+      when: awg_config_available | bool
+
+    - name: Remove temporary uploaded AWG config
+      ansible.builtin.file:
+        path: "{{ awg_temp_import_path }}"
+        state: absent
+      when: awg_config_available | bool
+
+    - name: Create placeholder AWG config when local config is missing
+      ansible.builtin.copy:
+        dest: "{{ awg_placeholder_config_path }}"
+        owner: root
+        group: root
+        mode: "0600"
+        content: |
+          [Interface]
+          PrivateKey = REPLACE_ME
+          Address = 10.8.0.2/24
+
+          [Peer]
+          PublicKey = REPLACE_ME
+          Endpoint = 203.0.113.10:51820
+          AllowedIPs = 10.8.0.0/24
+          PersistentKeepalive = 25
+      when: not awg_config_available | bool
+
+    - name: Create placeholder AWG env when local config is missing
+      ansible.builtin.copy:
+        dest: "{{ awg_placeholder_env_path }}"
+        owner: root
+        group: root
+        mode: "0600"
+        content: |
+          AWG_ADDRESSES="10.8.0.2/24"
+          AWG_ROUTES="10.8.0.0/24"
+          AWG_MTU="1280"
+      when: not awg_config_available | bool
+
+    - name: Ensure AWG service is disabled when using placeholder config
+      ansible.builtin.systemd:
+        name: "{{ awg_service_name }}.service"
+        enabled: false
+        state: stopped
+        daemon_reload: true
+      failed_when: false
+      when: not awg_config_available | bool
+
+    - name: Explain placeholder result
+      ansible.builtin.debug:
+        msg:
+          - "AWG config was not found on the controller, so a placeholder was created."
+          - "Placeholder files: {{ awg_placeholder_config_path }} and {{ awg_placeholder_env_path }}"
+          - "Upload a real config later and run: sudo {{ awg_import_binary_path }} /path/to/config --interface {{ awg_interface_name }} --restart"
+      when: not awg_config_available | bool
+
+  handlers:
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true

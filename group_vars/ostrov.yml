@@ -1,0 +1,50 @@
+ansible_user: slava
+ansible_become: true
+ansible_become_method: sudo
+ansible_ssh_transfer_method: piped
+ansible_ssh_timeout: 60
+
+# Connect to priboi with operator_key, then forward to the reverse SSH tunnel on priboi.
+ansible_ssh_common_args: >-
+  -o ProxyCommand="ssh -i /home/slava/.ssh/operator_key -o IdentitiesOnly=yes -o PreferredAuthentications=publickey -o PasswordAuthentication=no -o ServerAliveInterval=20 -o ServerAliveCountMax=3 -W %h:%p slava@212.15.49.66"
+  -o IdentitiesOnly=yes
+  -o PreferredAuthentications=password
+  -o PubkeyAuthentication=no
+  -o ConnectTimeout=30
+  -o ServerAliveInterval=20
+  -o ServerAliveCountMax=3
+  -o StrictHostKeyChecking=no
+  -o UserKnownHostsFile=/dev/null
+  -o HostKeyAlias=ostrov-via-priboi
+
+# AmneziaWG client settings for ostrov.
+# Fill these values before running: ansible-playbook -i inventory.ini setup-awg-client.yml --limit ostrov-u24
+awg_interface: awg0
+awg_client_addresses:
+  - 10.8.0.2/24
+awg_allowed_ips:
+  - 10.8.0.0/24
+awg_route_cidrs:
+  - 10.8.0.0/24
+awg_endpoint_host: 89.125.60.36
+awg_endpoint_port: 51820
+awg_private_key: "REPLACE_ME"
+awg_server_public_key: "REPLACE_ME"
+# awg_preshared_key: "REPLACE_ME"
+# awg_mtu: 1280
+# awg_persistent_keepalive: 25
+#
+# Optional AmneziaWG obfuscation parameters.
+# Set exactly the same values as on the AWG server, except client-only signatures I1-I5 if needed.
+# awg_jc: 5
+# awg_jmin: 40
+# awg_jmax: 70
+# awg_s1: 120
+# awg_s2: 160
+# awg_s3: 20-40
+# awg_s4: 400-900
+# awg_h1: 1742748364
+# awg_h2: 932741234
+# awg_h3: 1200-1800
+# awg_h4: 64000-65000
+# awg_i1: "<r 16><t>"

@@ -17,6 +17,7 @@ LOGIN_RE = re.compile(
     r"Accepted (?P<method>[\w\-/]+) for (invalid user )?(?P<user>\S+) "
     r"from (?P<ip>\S+) port (?P<port>\d+)"
 )
+DEFAULT_DUPLICATE_WINDOW_SECONDS = 30 * 60
 
 
 def load_config():
@@ -39,6 +40,13 @@ def load_config():
     state_file = os.getenv(
         "SSH_TG_STATE_FILE", "/var/lib/ssh-telegram-notifier/state.json"
     ).strip()
+    duplicate_window = os.getenv("SSH_TG_DUPLICATE_WINDOW_SECONDS", "").strip()
+    try:
+        duplicate_window_seconds = int(duplicate_window or DEFAULT_DUPLICATE_WINDOW_SECONDS)
+    except ValueError as exc:
+        raise ValueError("SSH_TG_DUPLICATE_WINDOW_SECONDS must be an integer") from exc
+    if duplicate_window_seconds < 0:
+        raise ValueError("SSH_TG_DUPLICATE_WINDOW_SECONDS must be >= 0")
     return (
         token,
         allowed_user_id,
@@ -48,6 +56,7 @@ def load_config():
         hostname,
         prefix,
         state_file,
+        duplicate_window_seconds,
     )
 
 
@@ -68,6 +77,15 @@ def build_message(prefix, hostname, user, ip, method, port, timestamp):
         f"Method: {method}\n"
         f"Port: {port}\n"
         f"Time: {timestamp}"
+    )
+
+
+def build_reboot_message(hostname, reason, boot_time):
+    return (
+        "! rebooted\n"
+        f"Host: {hostname}\n"
+        f"- reason: {reason}\n"
+        f"- date: {boot_time}"
     )
 
 
@@ -116,6 +134,49 @@ def save_state(state_file, state):
     os.replace(tmp_file, state_file)
 
 
+def make_login_key(user, ip, method):
+    return f"{user}|{ip}|{method}"
+
+
+def prune_recent_logins(state, now_ts, window_seconds):
+    recent_logins = state.get("recent_logins")
+    if not isinstance(recent_logins, dict):
+        recent_logins = {}
+
+    if window_seconds <= 0:
+        state["recent_logins"] = {}
+        return False
+
+    cutoff_ts = now_ts - window_seconds
+    pruned_logins = {}
+    changed = False
+    for key, ts in recent_logins.items():
+        if not isinstance(ts, (int, float)):
+            changed = True
+            continue
+        if ts >= cutoff_ts:
+            pruned_logins[key] = ts
+        else:
+            changed = True
+
+    if pruned_logins != recent_logins:
+        changed = True
+    state["recent_logins"] = pruned_logins
+    return changed
+
+
+def should_skip_duplicate_login(state, user, ip, method, now_ts, window_seconds):
+    prune_recent_logins(state, now_ts, window_seconds)
+    if window_seconds <= 0:
+        return False
+
+    login_key = make_login_key(user, ip, method)
+    recent_logins = state.setdefault("recent_logins", {})
+    last_seen_ts = recent_logins.get(login_key)
+    recent_logins[login_key] = now_ts
+    return isinstance(last_seen_ts, (int, float)) and now_ts - last_seen_ts < window_seconds
+
+
 def follow_ssh_journal():
     cmd = [
         "journalctl",
@@ -136,6 +197,81 @@ def follow_ssh_journal():
         text=True,
         bufsize=1,
     )
+
+
+def get_boot_id():
+    try:
+        with open("/proc/sys/kernel/random/boot_id", "r", encoding="utf-8") as fh:
+            return fh.read().strip()
+    except OSError:
+        return ""
+
+
+def get_boot_time():
+    try:
+        result = subprocess.run(
+            ["uptime", "-s"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        boot_time = result.stdout.strip()
+        if boot_time:
+            return boot_time
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
+
+
+def detect_reboot_reason():
+    try:
+        result = subprocess.run(
+            ["journalctl", "-b", "-1", "-n", "200", "--no-pager", "-o", "cat"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        result = None
+
+    if result and result.stdout:
+        for raw_line in reversed(result.stdout.splitlines()):
+            line = raw_line.strip()
+            if not line:
+                continue
+            lowered = line.lower()
+            if any(
+                token in lowered
+                for token in (
+                    "reboot",
+                    "shutting down",
+                    "shutdown",
+                    "powering off",
+                    "watchdog",
+                    "panic",
+                    "crash",
+                )
+            ):
+                return line
+
+    try:
+        result = subprocess.run(
+            ["last", "-x", "-n", "4", "reboot", "shutdown"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        result = None
+
+    if result and result.stdout:
+        lowered = result.stdout.lower()
+        if "shutdown" in lowered:
+            return "clean shutdown or reboot"
+        if "reboot" in lowered:
+            return "reboot without recorded shutdown"
+
+    return "unknown"
 
 
 def fetch_updates(token, offset):
@@ -215,18 +351,27 @@ def main():
             hostname,
             prefix,
             state_file,
+            duplicate_window_seconds,
         ) = load_config()
     except ValueError as exc:
         print(f"config error: {exc}", file=sys.stderr)
         return 2
 
     state = load_state(state_file)
+    if prune_recent_logins(state, time.time(), duplicate_window_seconds):
+        save_state(state_file, state)
     if not chat_id:
         chat_id = str(state.get("chat_id", "")).strip()
     update_offset = state.get("update_offset")
     if not isinstance(update_offset, int):
         update_offset = None
     warn_no_chat_id_ts = 0
+    current_boot_id = get_boot_id()
+    current_boot_time = get_boot_time()
+    reboot_reason = detect_reboot_reason()
+    if current_boot_id and "last_reboot_notice_boot_id" not in state:
+        state["last_reboot_notice_boot_id"] = current_boot_id
+        save_state(state_file, state)
 
     while True:
         proc = follow_ssh_journal()
@@ -252,6 +397,23 @@ def main():
                 except (urllib.error.URLError, RuntimeError) as exc:
                     print(f"telegram poll error: {exc}", file=sys.stderr)
 
+                if (
+                    chat_id
+                    and current_boot_id
+                    and state.get("last_reboot_notice_boot_id") != current_boot_id
+                ):
+                    reboot_text = build_reboot_message(
+                        hostname=hostname,
+                        reason=reboot_reason,
+                        boot_time=current_boot_time,
+                    )
+                    try:
+                        send_telegram(token, chat_id, reboot_text)
+                        state["last_reboot_notice_boot_id"] = current_boot_id
+                        save_state(state_file, state)
+                    except (urllib.error.URLError, RuntimeError) as exc:
+                        print(f"send reboot error: {exc}", file=sys.stderr)
+
                 ready, _, _ = select.select([proc.stdout], [], [], 1)
                 if not ready:
                     if proc.poll() is not None:
@@ -275,6 +437,17 @@ def main():
                 if user in ignore_users:
                     continue
 
+                if should_skip_duplicate_login(
+                    state=state,
+                    user=user,
+                    ip=login_event["ip"],
+                    method=login_event["method"],
+                    now_ts=now,
+                    window_seconds=duplicate_window_seconds,
+                ):
+                    save_state(state_file, state)
+                    continue
+
                 if not chat_id:
                     if now - warn_no_chat_id_ts > 60:
                         print(
@@ -295,6 +468,7 @@ def main():
                 )
                 try:
                     send_telegram(token, chat_id, text)
+                    save_state(state_file, state)
                 except (urllib.error.URLError, RuntimeError) as exc:
                     print(f"send error: {exc}", file=sys.stderr)
         except Exception as exc:  # noqa: BLE001

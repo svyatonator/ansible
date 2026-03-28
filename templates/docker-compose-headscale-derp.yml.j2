@@ -1,0 +1,13 @@
+services:
+  headscale:
+    image: {{ headscale_image }}
+    container_name: {{ headscale_container_name }}
+    restart: unless-stopped
+    command: serve
+    ports:
+      - "{{ headscale_derp_stun_port }}:{{ headscale_derp_stun_port }}/udp"
+      - "{{ headscale_metrics_bind }}:9090"
+    volumes:
+      - "{{ headscale_docker_root }}/config:/etc/headscale"
+      - "{{ headscale_docker_root }}/lib:/var/lib/headscale"
+      - "{{ headscale_docker_root }}/run:/var/run/headscale"

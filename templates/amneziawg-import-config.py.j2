@@ -1,0 +1,248 @@
+#!/usr/bin/env python3
+"""Import an AWG config on the remote host and optionally restart the service."""
+
+from __future__ import annotations
+
+import argparse
+import configparser
+import ipaddress
+import re
+import socket
+import subprocess
+from pathlib import Path
+
+
+AWG_KEYS = (
+    "PrivateKey",
+    "Jc",
+    "Jmin",
+    "Jmax",
+    "S1",
+    "S2",
+    "S3",
+    "S4",
+    "H1",
+    "H2",
+    "H3",
+    "H4",
+    "I1",
+    "I2",
+    "I3",
+    "I4",
+    "I5",
+)
+
+PEER_KEYS = (
+    "PublicKey",
+    "PresharedKey",
+    "Endpoint",
+    "AllowedIPs",
+    "PersistentKeepalive",
+)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Import an AWG config into {{ awg_config_dir }} and optionally restart the service"
+    )
+    parser.add_argument("config", type=Path, help="Path to the source AWG client config")
+    parser.add_argument("--interface", default="awg0", help="Target AWG interface name")
+    parser.add_argument(
+        "--config-dir",
+        type=Path,
+        default=Path("{{ awg_config_dir }}"),
+        help="Target directory for AWG runtime files",
+    )
+    parser.add_argument(
+        "--routes",
+        nargs="*",
+        help="Explicit route CIDRs. Defaults to AllowedIPs from the imported config.",
+    )
+    parser.add_argument("--mtu", type=int, help="Override MTU value")
+    parser.add_argument(
+        "--protect-hosts",
+        nargs="*",
+        default=[],
+        help="Host/IP list to keep reachable outside AWG when routes include default route",
+    )
+    parser.add_argument(
+        "--no-endpoint-protection",
+        action="store_true",
+        help="Do not auto-protect Endpoint host when default routes are used",
+    )
+    parser.add_argument(
+        "--restart",
+        action="store_true",
+        help="Restart amneziawg-client@interface after import",
+    )
+    return parser.parse_args()
+
+
+def split_csv(value: str | None) -> list[str]:
+    if not value:
+        return []
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def is_default_route(route: str) -> bool:
+    return route.strip() in {"0.0.0.0/0", "::/0"}
+
+
+def resolve_host_ipv4(host: str) -> str | None:
+    try:
+        ipaddress.IPv4Address(host)
+        return host
+    except ValueError:
+        pass
+    try:
+        infos = socket.getaddrinfo(host, None, socket.AF_INET, socket.SOCK_STREAM)
+    except socket.gaierror:
+        return None
+    for info in infos:
+        candidate = info[4][0]
+        if candidate:
+            return candidate
+    return None
+
+
+def parse_ip_route_get(host: str) -> tuple[str | None, str | None]:
+    proc = subprocess.run(
+        ["ip", "-4", "route", "get", host],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0:
+        return None, None
+    tokens = proc.stdout.strip().split()
+    via = None
+    dev = None
+    for index, token in enumerate(tokens):
+        if token == "via" and index + 1 < len(tokens):
+            via = tokens[index + 1]
+        if token == "dev" and index + 1 < len(tokens):
+            dev = tokens[index + 1]
+    return via, dev
+
+
+def detect_reverse_ssh_hosts(unit_path: Path = Path("/etc/systemd/system/reverse-ssh.service")) -> list[str]:
+    if not unit_path.exists():
+        return []
+    content = unit_path.read_text(encoding="utf-8")
+    hosts = re.findall(r"\b[\w.-]+@([A-Za-z0-9.-]+)\b", content)
+    return sorted(set(hosts))
+
+
+def load_config(path: Path) -> configparser.ConfigParser:
+    parser = configparser.ConfigParser(interpolation=None)
+    parser.optionxform = str
+    with path.open("r", encoding="utf-8") as handle:
+        parser.read_file(handle)
+    if "Interface" not in parser or "Peer" not in parser:
+        raise ValueError("Config must contain [Interface] and [Peer] sections")
+    return parser
+
+
+def render_runtime_config(parser: configparser.ConfigParser) -> str:
+    lines = ["[Interface]"]
+    for key in AWG_KEYS:
+        value = parser["Interface"].get(key)
+        if value:
+            lines.append(f"{key} = {value}")
+
+    lines.append("")
+    lines.append("[Peer]")
+    for key in PEER_KEYS:
+        value = parser["Peer"].get(key)
+        if value:
+            lines.append(f"{key} = {value}")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def render_env(
+    parser: configparser.ConfigParser,
+    mtu_override: int | None,
+    routes_override: list[str] | None,
+    protect_routes: list[str],
+) -> str:
+    addresses = split_csv(parser["Interface"].get("Address"))
+    routes = routes_override if routes_override else split_csv(parser["Peer"].get("AllowedIPs"))
+    mtu = mtu_override if mtu_override is not None else parser["Interface"].get("MTU", "{{ awg_mtu | default(1280) }}")
+    return "\n".join(
+        [
+            f'AWG_ADDRESSES="{",".join(addresses)}"',
+            f'AWG_ROUTES="{",".join(routes)}"',
+            f'AWG_PROTECT_ROUTES="{",".join(protect_routes)}"',
+            f'AWG_MTU="{mtu}"',
+            "",
+        ]
+    )
+
+
+def main() -> int:
+    args = parse_args()
+    parser = load_config(args.config)
+
+    endpoint = parser["Peer"].get("Endpoint", "")
+    if ":" not in endpoint:
+        raise ValueError(f"Endpoint must be in host:port form, got: {endpoint!r}")
+    endpoint_host = endpoint.rsplit(":", 1)[0].strip("[]")
+
+    routes = args.routes if args.routes else split_csv(parser["Peer"].get("AllowedIPs"))
+    has_default_routes = any(is_default_route(route) for route in routes)
+
+    protected_hosts: list[str] = list(args.protect_hosts)
+    if has_default_routes and not args.no_endpoint_protection:
+        protected_hosts.append(endpoint_host)
+    if has_default_routes:
+        protected_hosts.extend(detect_reverse_ssh_hosts())
+
+    protect_routes: list[str] = []
+    for host in sorted(set(host for host in protected_hosts if host.strip())):
+        host_ipv4 = resolve_host_ipv4(host.strip())
+        if not host_ipv4:
+            continue
+        via, dev = parse_ip_route_get(host_ipv4)
+        if not dev:
+            continue
+        if via:
+            protect_routes.append(f"{host_ipv4}@{via}@{dev}")
+        else:
+            protect_routes.append(f"{host_ipv4}@@{dev}")
+
+    args.config_dir.mkdir(parents=True, exist_ok=True)
+    config_path = args.config_dir / f"{args.interface}.conf"
+    env_path = args.config_dir / f"{args.interface}.env"
+
+    config_path.write_text(render_runtime_config(parser), encoding="utf-8")
+    env_path.write_text(render_env(parser, args.mtu, args.routes, protect_routes), encoding="utf-8")
+    config_path.chmod(0o600)
+    env_path.chmod(0o600)
+
+    print(f"Wrote {config_path}")
+    print(f"Wrote {env_path}")
+    if protect_routes:
+        print(f"Pinned routes: {', '.join(protect_routes)}")
+
+    if args.restart:
+        subprocess.run(
+            ["systemctl", "restart", f"amneziawg-client@{args.interface}.service"],
+            check=True,
+        )
+        subprocess.run(
+            [
+                "systemctl",
+                "status",
+                "--no-pager",
+                "--full",
+                f"amneziawg-client@{args.interface}.service",
+            ],
+            check=True,
+        )
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,388 @@
+- name: Provision Ostrov LXC containers with reverse SSH access
+  hosts: ostrov
+  gather_facts: true
+  become: true
+
+  vars_prompt:
+    - name: lxc_ostrov_container_name
+      prompt: "LXC container name"
+      private: false
+    - name: lxc_slava_password
+      prompt: "Password for user slava inside the LXC container"
+      private: true
+      confirm: true
+    - name: lxc_ostrov_reverse_port
+      prompt: "Reverse SSH port on priboi"
+      private: false
+
+  vars:
+    lxc_ostrov_image: ubuntu:24.04
+    lxc_ostrov_launch_timeout_sec: 900
+    lxc_ostrov_cloud_init_timeout_sec: 300
+    lxc_ostrov_network_wait_retries: 20
+    lxc_ostrov_network_wait_delay_sec: 5
+    lxc_ostrov_apt_timeout_sec: 300
+    lxc_ostrov_priboi_host: 212.15.49.66
+    lxc_ostrov_priboi_user: slava
+    lxc_ostrov_reverse_key_src: /home/slava/.ssh/id_ed25519_priboi
+    lxc_ostrov_reverse_key_dest: /home/slava/.ssh/id_ed25519_priboi
+    lxc_ostrov_reverse_service_tmp: /tmp/reverse-ssh.service
+    lxc_ostrov_sshd_password_override_tmp: /tmp/99-slava-password.conf
+
+  pre_tasks:
+    - name: Check that priboi reverse SSH private key exists on ostrov
+      ansible.builtin.stat:
+        path: "{{ lxc_ostrov_reverse_key_src }}"
+      register: lxc_ostrov_reverse_key_stat
+
+    - name: Ensure priboi reverse SSH private key is present on ostrov
+      ansible.builtin.assert:
+        that:
+          - lxc_ostrov_reverse_key_stat.stat.exists
+          - lxc_ostrov_reverse_key_stat.stat.isreg
+        fail_msg: "Expected reverse SSH private key on ostrov at {{ lxc_ostrov_reverse_key_src }}"
+
+    - name: Ensure LXC container name was provided
+      ansible.builtin.assert:
+        that:
+          - lxc_ostrov_container_name | trim | length > 0
+        fail_msg: "Provide a container name."
+
+    - name: Ensure reverse SSH port is numeric
+      ansible.builtin.assert:
+        that:
+          - (lxc_ostrov_reverse_port | int | string) == (lxc_ostrov_reverse_port | trim)
+          - (lxc_ostrov_reverse_port | int) > 0
+          - (lxc_ostrov_reverse_port | int) < 65536
+        fail_msg: "Reverse SSH port must be a number between 1 and 65535."
+
+  tasks:
+    - name: Check mode is not supported for this playbook
+      ansible.builtin.assert:
+        that:
+          - not ansible_check_mode
+        fail_msg: >-
+          setup-lxc-ostrov.yml does not support --check mode because it relies on
+          command-based LXC operations. Run without --check.
+
+    - name: Install host packages for LXC management
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - git
+        state: present
+        update_cache: true
+
+    - name: Detect available LXD package in apt
+      ansible.builtin.shell: >-
+        if [ "$(apt-cache policy lxd | awk -F': ' '/Candidate:/ {print $2}')" != "(none)" ]; then
+          echo lxd;
+        elif [ "$(apt-cache policy lxd-installer | awk -F': ' '/Candidate:/ {print $2}')" != "(none)" ]; then
+          echo lxd-installer;
+        else
+          exit 1;
+        fi
+      args:
+        executable: /bin/bash
+      register: lxc_ostrov_lxd_package
+      changed_when: false
+
+    - name: Install LXD package
+      ansible.builtin.apt:
+        name: "{{ lxc_ostrov_lxd_package.stdout }}"
+        state: present
+
+    - name: Ensure LXD command is available when using lxd-installer
+      ansible.builtin.command:
+        cmd: lxd version
+      environment:
+        LXD_INSTALLER_NO_PROMPT: "1"
+      changed_when: false
+      when: lxc_ostrov_lxd_package.stdout == "lxd-installer"
+
+    - name: Collect service facts
+      ansible.builtin.service_facts:
+
+    - name: Ensure apt-managed LXD service is running
+      ansible.builtin.service:
+        name: lxd
+        state: started
+        enabled: true
+      when: "'lxd.service' in ansible_facts.services"
+
+    - name: Ensure snap-managed LXD service is running
+      ansible.builtin.service:
+        name: snap.lxd.daemon
+        state: started
+        enabled: true
+      when: "'snap.lxd.daemon.service' in ansible_facts.services"
+
+    - name: Wait until LXD daemon responds
+      ansible.builtin.command:
+        cmd: lxc info
+      register: lxc_ostrov_lxd_info
+      changed_when: false
+      retries: 20
+      delay: 3
+      until: lxc_ostrov_lxd_info.rc == 0
+
+    - name: Check if LXD is already initialized
+      ansible.builtin.command:
+        cmd: lxc profile list
+      register: lxc_ostrov_lxd_profile_check
+      failed_when: false
+      changed_when: false
+
+    - name: Initialize LXD non-interactively if needed
+      ansible.builtin.command:
+        cmd: lxd init --auto
+      when: lxc_ostrov_lxd_profile_check.rc != 0
+
+    - name: Check if default LXD storage pool exists
+      ansible.builtin.command:
+        cmd: lxc storage show default
+      register: lxc_ostrov_lxd_storage_pool_check
+      failed_when: false
+      changed_when: false
+
+    - name: Create default LXD storage pool if missing
+      ansible.builtin.command:
+        cmd: lxc storage create default dir
+      when: lxc_ostrov_lxd_storage_pool_check.rc != 0
+
+    - name: Check if default profile has root disk device
+      ansible.builtin.command:
+        cmd: lxc profile device get default root path
+      register: lxc_ostrov_lxd_root_device_check
+      failed_when: false
+      changed_when: false
+
+    - name: Add root disk device to default profile if missing
+      ansible.builtin.command:
+        cmd: lxc profile device add default root disk path=/ pool=default
+      when: lxc_ostrov_lxd_root_device_check.rc != 0
+
+    - name: Ensure root disk device in default profile uses default pool
+      ansible.builtin.command:
+        cmd: lxc profile device set default root pool default
+      changed_when: false
+
+    - name: Check if managed LXD bridge lxdbr0 exists
+      ansible.builtin.command:
+        cmd: lxc network show lxdbr0
+      register: lxc_ostrov_lxd_bridge_check
+      failed_when: false
+      changed_when: false
+
+    - name: Create managed LXD bridge lxdbr0 if missing
+      ansible.builtin.command:
+        cmd: lxc network create lxdbr0 ipv4.address=auto ipv4.nat=true ipv6.address=none
+      when: lxc_ostrov_lxd_bridge_check.rc != 0
+
+    - name: Check if default profile has network device
+      ansible.builtin.command:
+        cmd: lxc profile device get default eth0 network
+      register: lxc_ostrov_lxd_default_nic_check
+      failed_when: false
+      changed_when: false
+
+    - name: Add network device to default profile if missing
+      ansible.builtin.command:
+        cmd: lxc profile device add default eth0 nic network=lxdbr0 name=eth0
+      when: lxc_ostrov_lxd_default_nic_check.rc != 0
+
+    - name: Check whether requested LXC containers already exist
+      ansible.builtin.command:
+        cmd: lxc info {{ lxc_ostrov_container_name }}
+      register: lxc_ostrov_exists
+      failed_when: false
+      changed_when: false
+
+    - name: Launch requested LXC container if missing
+      ansible.builtin.command:
+        cmd: >-
+          timeout {{ lxc_ostrov_launch_timeout_sec }}s
+          lxc launch {{ lxc_ostrov_image }} {{ lxc_ostrov_container_name }}
+      failed_when: false
+      changed_when: true
+      when: lxc_ostrov_exists.rc != 0
+
+    - name: Ensure requested LXC container is started
+      ansible.builtin.command:
+        cmd: lxc start {{ lxc_ostrov_container_name }}
+      register: lxc_ostrov_start
+      failed_when: false
+      changed_when: lxc_ostrov_start.rc == 0
+
+    - name: Enable LXC container autostart on ostrov boot
+      ansible.builtin.command:
+        cmd: lxc config set {{ lxc_ostrov_container_name }} boot.autostart true
+      changed_when: false
+
+    - name: Wait until requested LXC container is RUNNING
+      ansible.builtin.command:
+        cmd: lxc list {{ lxc_ostrov_container_name }} --format csv -c s
+      register: lxc_ostrov_state
+      changed_when: false
+      retries: 20
+      delay: 3
+      until: "'RUNNING' in (lxc_ostrov_state.stdout | trim)"
+
+    - name: Wait for cloud-init in requested LXC container if available
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ lxc_ostrov_container_name }} -- bash -lc
+          "timeout {{ lxc_ostrov_cloud_init_timeout_sec }}s cloud-init status --wait"
+      failed_when: false
+      changed_when: false
+
+    - name: Wait for default IPv4 route inside requested LXC container
+      ansible.builtin.command:
+        cmd: lxc exec {{ lxc_ostrov_container_name }} -- bash -lc "ip -4 route show default"
+      register: lxc_ostrov_default_route
+      changed_when: false
+      retries: "{{ lxc_ostrov_network_wait_retries | int }}"
+      delay: "{{ lxc_ostrov_network_wait_delay_sec | int }}"
+      until: lxc_ostrov_default_route.rc == 0 and (lxc_ostrov_default_route.stdout | trim | length) > 0
+
+    - name: Wait for DNS resolution inside requested LXC container
+      ansible.builtin.command:
+        cmd: lxc exec {{ lxc_ostrov_container_name }} -- getent hosts archive.ubuntu.com
+      register: lxc_ostrov_dns_archive
+      changed_when: false
+      retries: "{{ lxc_ostrov_network_wait_retries | int }}"
+      delay: "{{ lxc_ostrov_network_wait_delay_sec | int }}"
+      until: lxc_ostrov_dns_archive.rc == 0
+
+    - name: Install base packages inside requested LXC container
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ lxc_ostrov_container_name }} -- bash -lc
+          "set -e;
+          export DEBIAN_FRONTEND=noninteractive;
+          timeout {{ lxc_ostrov_apt_timeout_sec }}s apt-get update;
+          timeout {{ lxc_ostrov_apt_timeout_sec }}s apt-get install -y
+          autossh ca-certificates curl git iproute2 net-tools openssh-server sudo"
+
+    - name: Ensure user slava exists inside requested LXC container
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ lxc_ostrov_container_name }} -- bash -lc
+          "id -u slava >/dev/null 2>&1 || useradd -m -s /bin/bash slava"
+
+    - name: Add user slava to sudo group inside requested LXC container
+      ansible.builtin.command:
+        cmd: lxc exec {{ lxc_ostrov_container_name }} -- usermod -aG sudo slava
+
+    - name: Set password for user slava inside requested LXC container
+      ansible.builtin.command:
+        cmd: lxc exec {{ lxc_ostrov_container_name }} -- chpasswd
+        stdin: "slava:{{ lxc_slava_password }}"
+      no_log: true
+
+    - name: Ensure SSH directory exists for user slava inside requested LXC container
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ lxc_ostrov_container_name }} -- bash -lc
+          "install -d -m 0700 -o slava -g slava /home/slava/.ssh"
+
+    - name: Push priboi reverse SSH private key into requested LXC container
+      ansible.builtin.command:
+        cmd: >-
+          lxc file push {{ lxc_ostrov_reverse_key_src }}
+          {{ lxc_ostrov_container_name }}{{ lxc_ostrov_reverse_key_dest }}
+
+    - name: Fix ownership and permissions for priboi reverse SSH key inside requested LXC container
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ lxc_ostrov_container_name }} -- bash -lc
+          "chown slava:slava {{ lxc_ostrov_reverse_key_dest }} &&
+          chmod 600 {{ lxc_ostrov_reverse_key_dest }}"
+
+    - name: Add priboi host key to known_hosts inside requested LXC container
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ lxc_ostrov_container_name }} -- bash -lc
+          "ssh-keyscan -H {{ lxc_ostrov_priboi_host }} >> /home/slava/.ssh/known_hosts &&
+          chown slava:slava /home/slava/.ssh/known_hosts &&
+          chmod 644 /home/slava/.ssh/known_hosts"
+
+    - name: Force cloud image SSH override to allow password auth when present
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ lxc_ostrov_container_name }} -- bash -lc
+          "if [ -f /etc/ssh/sshd_config.d/60-cloudimg-settings.conf ]; then
+             sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config.d/60-cloudimg-settings.conf;
+           fi"
+
+    - name: Render SSH password auth override on ostrov
+      ansible.builtin.copy:
+        dest: "{{ lxc_ostrov_sshd_password_override_tmp }}"
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          PasswordAuthentication yes
+          KbdInteractiveAuthentication no
+          UsePAM yes
+
+    - name: Push SSH password auth override into requested LXC container
+      ansible.builtin.command:
+        cmd: >-
+          lxc file push {{ lxc_ostrov_sshd_password_override_tmp }}
+          {{ lxc_ostrov_container_name }}/etc/ssh/sshd_config.d/99-slava-password.conf
+
+    - name: Restart SSH service inside requested LXC container
+      ansible.builtin.command:
+        cmd: lxc exec {{ lxc_ostrov_container_name }} -- systemctl restart ssh
+
+    - name: Render reverse SSH systemd unit on ostrov
+      ansible.builtin.copy:
+        dest: "{{ lxc_ostrov_reverse_service_tmp }}"
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Reverse SSH Tunnel to priboi
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          User=slava
+          ExecStart=/usr/bin/autossh -M 0 -N -i {{ lxc_ostrov_reverse_key_dest }} -o "StrictHostKeyChecking=yes" -o "ServerAliveInterval 30" -o "ServerAliveCountMax 3" -o "ExitOnForwardFailure yes" -R {{ lxc_ostrov_reverse_port | int }}:localhost:22 {{ lxc_ostrov_priboi_user }}@{{ lxc_ostrov_priboi_host }}
+          Restart=always
+          RestartSec=10
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Push reverse SSH systemd unit into requested LXC container
+      ansible.builtin.command:
+        cmd: >-
+          lxc file push {{ lxc_ostrov_reverse_service_tmp }}
+          {{ lxc_ostrov_container_name }}/etc/systemd/system/reverse-ssh.service
+
+    - name: Enable and start reverse SSH service inside requested LXC container
+      ansible.builtin.command:
+        cmd: >-
+          lxc exec {{ lxc_ostrov_container_name }} -- bash -lc
+          "systemctl daemon-reload &&
+          systemctl enable --now reverse-ssh.service"
+
+    - name: Print reverse SSH port mapping for requested LXC container
+      ansible.builtin.debug:
+        msg: >-
+          {{ lxc_ostrov_container_name }} is reachable from priboi with:
+          ssh slava@127.0.0.1 -p {{ lxc_ostrov_reverse_port | int }}
+
+    - name: Remove temporary reverse SSH unit file from ostrov
+      ansible.builtin.file:
+        path: "{{ lxc_ostrov_reverse_service_tmp }}"
+        state: absent
+
+    - name: Remove temporary SSH password override file from ostrov
+      ansible.builtin.file:
+        path: "{{ lxc_ostrov_sshd_password_override_tmp }}"
+        state: absent

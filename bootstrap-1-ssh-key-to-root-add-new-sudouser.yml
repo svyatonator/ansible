@@ -12,11 +12,31 @@
     sshd_config_path: /etc/ssh/sshd_config
 
   tasks:
+    - name: Check whether sudo is already installed
+      ansible.builtin.command: command -v sudo
+      register: sudo_check
+      changed_when: false
+      failed_when: false
+
+    - name: Repair malformed apt extended_states when sudo is missing
+      ansible.builtin.raw: |
+        set -eu
+        states=/var/lib/apt/extended_states
+        if [ -f "$states" ] && ! apt-cache policy >/dev/null 2>&1; then
+          cp "$states" "${states}.bak.$(date +%s)" || true
+          : > "$states"
+          echo repaired
+        fi
+      register: apt_extended_states_repair
+      changed_when: "'repaired' in apt_extended_states_repair.stdout"
+      when: sudo_check.rc != 0
+
     - name: Ensure sudo is installed
       ansible.builtin.apt:
         name: sudo
         state: present
         update_cache: true
+      when: sudo_check.rc != 0
 
     - name: Create user
       ansible.builtin.user:

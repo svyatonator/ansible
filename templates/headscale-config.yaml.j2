@@ -1,0 +1,84 @@
+server_url: {{ headscale_server_url }}
+listen_addr: 0.0.0.0:8080
+metrics_listen_addr: 0.0.0.0:9090
+grpc_listen_addr: 0.0.0.0:50443
+grpc_allow_insecure: false
+
+noise:
+  private_key_path: /var/lib/headscale/noise_private.key
+
+prefixes:
+  v4: {{ headscale_prefix_v4 }}
+  v6: {{ headscale_prefix_v6 }}
+
+allocation: sequential
+
+derp:
+  server:
+    enabled: true
+    region_id: {{ headscale_derp_region_id }}
+    region_code: "{{ headscale_derp_region_code }}"
+    region_name: "{{ headscale_derp_region_name }}"
+    verify_clients: true
+    stun_listen_addr: "0.0.0.0:{{ headscale_derp_stun_port }}"
+    private_key_path: /var/lib/headscale/derp_server_private.key
+    automatically_add_embedded_derp_region: false
+    ipv4: {{ headscale_public_ipv4 }}
+{% if headscale_public_ipv6 | length > 0 %}
+    ipv6: {{ headscale_public_ipv6 }}
+{% endif %}
+{% if headscale_include_default_derp_map %}
+  urls:
+    - https://controlplane.tailscale.com/derpmap/default
+{% else %}
+  urls: []
+{% endif %}
+  paths:
+    - /etc/headscale/derp.yaml
+  auto_update_enabled: true
+  update_frequency: 24h
+
+disable_check_updates: false
+ephemeral_node_inactivity_timeout: 30m
+
+database:
+  type: sqlite
+  debug: false
+  sqlite:
+    path: /var/lib/headscale/db.sqlite
+    write_ahead_log: true
+    wal_autocheckpoint: 1000
+
+tls_cert_path: ""
+tls_key_path: ""
+
+log:
+  level: info
+  format: text
+
+policy:
+{% if headscale_acl_mode == "permissive" %}
+  mode: file
+  path: /etc/headscale/acl.hujson
+{% else %}
+  mode: database
+  path: ""
+{% endif %}
+
+dns:
+  magic_dns: false
+  base_domain: {{ headscale_base_domain }}
+  override_local_dns: false
+  nameservers:
+    global: []
+    split: {}
+  search_domains: []
+  extra_records: []
+
+unix_socket: /var/run/headscale/headscale.sock
+unix_socket_permission: "0770"
+
+logtail:
+  enabled: false
+
+randomize_client_port: false

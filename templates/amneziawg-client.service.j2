@@ -1,0 +1,13 @@
+[Unit]
+Description=AmneziaWG client for %i
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart={{ awg_scripts_dir }}/%i-up.sh
+ExecStop={{ awg_scripts_dir }}/%i-down.sh
+
+[Install]
+WantedBy=multi-user.target

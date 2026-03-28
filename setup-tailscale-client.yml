@@ -1,0 +1,190 @@
+- name: Setup Tailscale client on Linux hosts
+  hosts: servers
+  gather_facts: true
+  become: true
+
+  vars:
+    tailscale_track: stable
+    tailscale_login_server: https://hs.volna.ovh
+    tailscale_hostname: "{{ ansible_hostname | default(inventory_hostname) }}"
+    tailscale_repo_distribution_map:
+      Ubuntu: ubuntu
+      Debian: debian
+    tailscale_repo_distribution: "{{ tailscale_repo_distribution_map.get(ansible_distribution, '') }}"
+    tailscale_repo_release: "{{ ansible_distribution_release | lower }}"
+    tailscale_repo_baseurl: "https://pkgs.tailscale.com/{{ tailscale_track }}/{{ tailscale_repo_distribution }}"
+    tailscale_keyring_path: /usr/share/keyrings/tailscale-archive-keyring.gpg
+    tailscale_sources_path: /etc/apt/sources.list.d/tailscale.list
+    tailscale_state_json_path: /var/lib/tailscale/tailscaled.state
+    tailscale_advertise_exit_node: false
+    tailscale_accept_dns: true
+    tailscale_accept_routes: false
+    tailscale_force_reauth: false
+    tailscale_open_udp_port: true
+    tailscale_udp_port: 41641
+    tailscale_manage_connection: true
+
+  pre_tasks:
+    - name: Require Ubuntu or Debian for this playbook
+      ansible.builtin.assert:
+        that:
+          - tailscale_repo_distribution | length > 0
+        fail_msg: "setup-tailscale-client.yml currently supports Ubuntu and Debian hosts only."
+
+  tasks:
+    - name: Install base packages
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+        update_cache: true
+
+    - name: Ensure keyrings directory exists
+      ansible.builtin.file:
+        path: /usr/share/keyrings
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install Tailscale archive keyring
+      ansible.builtin.get_url:
+        url: "{{ tailscale_repo_baseurl }}/{{ tailscale_repo_release }}.noarmor.gpg"
+        dest: "{{ tailscale_keyring_path }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install Tailscale apt source list
+      ansible.builtin.get_url:
+        url: "{{ tailscale_repo_baseurl }}/{{ tailscale_repo_release }}.tailscale-keyring.list"
+        dest: "{{ tailscale_sources_path }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install Tailscale package
+      ansible.builtin.apt:
+        name: tailscale
+        state: present
+        update_cache: true
+
+    - name: Ensure tailscaled is enabled and started
+      ansible.builtin.systemd:
+        name: tailscaled
+        enabled: true
+        state: started
+
+    - name: Enable IPv4 forwarding for exit node mode
+      ansible.builtin.sysctl:
+        name: net.ipv4.ip_forward
+        value: "1"
+        state: present
+        sysctl_set: true
+        reload: true
+        sysctl_file: /etc/sysctl.d/99-tailscale.conf
+      when: tailscale_advertise_exit_node | bool
+
+    - name: Enable IPv6 forwarding for exit node mode
+      ansible.builtin.sysctl:
+        name: net.ipv6.conf.all.forwarding
+        value: "1"
+        state: present
+        sysctl_set: true
+        reload: true
+        sysctl_file: /etc/sysctl.d/99-tailscale.conf
+      when: tailscale_advertise_exit_node | bool
+
+    - name: Allow inbound Tailscale UDP port through UFW (if UFW is active)
+      ansible.builtin.ufw:
+        rule: allow
+        port: "{{ tailscale_udp_port | string }}"
+        proto: udp
+      ignore_errors: true
+      when: tailscale_open_udp_port | bool
+
+    - name: Check current Tailscale status
+      ansible.builtin.command:
+        argv:
+          - tailscale
+          - status
+          - --json
+      register: tailscale_status
+      changed_when: false
+      failed_when: false
+
+    - name: Set current Tailscale backend state
+      ansible.builtin.set_fact:
+        tailscale_backend_state: >-
+          {{
+            ((tailscale_status.stdout | from_json).BackendState)
+            if (tailscale_status.rc == 0 and (tailscale_status.stdout | default('') | trim | length > 0))
+            else ''
+          }}
+
+    - name: Build Tailscale up command
+      ansible.builtin.set_fact:
+        tailscale_up_argv: >-
+          {{
+            [
+              'tailscale',
+              'up',
+              '--login-server=' ~ tailscale_login_server,
+              '--hostname=' ~ tailscale_hostname,
+              '--accept-dns=' ~ ('true' if tailscale_accept_dns else 'false'),
+              '--accept-routes=' ~ ('true' if tailscale_accept_routes else 'false')
+            ]
+            + (['--auth-key=' ~ (tailscale_auth_key | default(''))] if (tailscale_auth_key | default('') | length > 0) else [])
+            + (['--advertise-exit-node'] if tailscale_advertise_exit_node | bool else [])
+          }}
+
+    - name: Connect host to Headscale using auth key
+      ansible.builtin.command:
+        argv: "{{ tailscale_up_argv }}"
+      register: tailscale_up_result
+      changed_when: true
+      no_log: true
+      when:
+        - tailscale_manage_connection | bool
+        - tailscale_auth_key | default('') | length > 0
+        - tailscale_force_reauth | bool or tailscale_backend_state != 'Running'
+
+    - name: Apply exit-node settings to an already connected host
+      ansible.builtin.command:
+        argv:
+          - tailscale
+          - set
+          - "--advertise-exit-node={{ 'true' if tailscale_advertise_exit_node | bool else 'false' }}"
+          - "--accept-dns={{ 'true' if tailscale_accept_dns else 'false' }}"
+          - "--accept-routes={{ 'true' if tailscale_accept_routes else 'false' }}"
+          - "--hostname={{ tailscale_hostname }}"
+      register: tailscale_set_result
+      changed_when: true
+      when:
+        - tailscale_manage_connection | bool
+        - tailscale_backend_state == 'Running'
+
+    - name: Check final Tailscale status
+      ansible.builtin.command:
+        argv:
+          - tailscale
+          - status
+      register: tailscale_status_text
+      changed_when: false
+      failed_when: false
+
+    - name: Report manual login hint when auth key is missing
+      ansible.builtin.debug:
+        msg:
+          - "Tailscale is installed and tailscaled is running."
+          - "To connect manually: sudo tailscale up --login-server {{ tailscale_login_server }}{% if tailscale_advertise_exit_node | bool %} --advertise-exit-node{% endif %}"
+      when:
+        - tailscale_manage_connection | bool
+        - tailscale_auth_key | default('') | length == 0
+        - tailscale_backend_state != 'Running'
+
+    - name: Print final Tailscale status
+      ansible.builtin.debug:
+        msg: "{{ tailscale_status_text.stdout_lines | default([]) }}"

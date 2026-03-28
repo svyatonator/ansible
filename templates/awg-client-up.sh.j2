@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+IFACE="{{ awg_interface_name }}"
+CONF="{{ awg_config_dir }}/{{ awg_interface_name }}.conf"
+ENV_FILE="{{ awg_config_dir }}/{{ awg_interface_name }}.env"
+BIN="{{ awg_go_binary_path }}"
+AWG_BIN="{{ awg_cli_binary | default('/usr/bin/awg') }}"
+
+AWG_ADDRESSES="${AWG_ADDRESSES:-}"
+AWG_ROUTES="${AWG_ROUTES:-}"
+AWG_PROTECT_ROUTES="${AWG_PROTECT_ROUTES:-}"
+AWG_MTU="${AWG_MTU:-{{ awg_mtu | default(1280) }}}"
+
+if [ -f "$ENV_FILE" ]; then
+  # shellcheck disable=SC1090
+  . "$ENV_FILE"
+fi
+
+if ! ip link show "$IFACE" >/dev/null 2>&1; then
+  "$BIN" "$IFACE"
+fi
+
+"$AWG_BIN" setconf "$IFACE" "$CONF"
+
+if [ -n "$AWG_ADDRESSES" ]; then
+  IFS=',' read -r -a ADDRESSES <<< "$AWG_ADDRESSES"
+  for address in "${ADDRESSES[@]}"; do
+    [ -n "$address" ] || continue
+    ip address replace "$address" dev "$IFACE"
+  done
+fi
+
+if [ -n "$AWG_PROTECT_ROUTES" ]; then
+  IFS=',' read -r -a PINNED_ROUTES <<< "$AWG_PROTECT_ROUTES"
+  for pinned in "${PINNED_ROUTES[@]}"; do
+    [ -n "$pinned" ] || continue
+    IFS='@' read -r target via dev <<< "$pinned"
+    [ -n "$target" ] || continue
+    [ -n "$dev" ] || continue
+    if [ -n "${via:-}" ]; then
+      ip route replace "$target" via "$via" dev "$dev"
+    else
+      ip route replace "$target" dev "$dev"
+    fi
+  done
+fi
+
+ip link set mtu "$AWG_MTU" up dev "$IFACE"
+
+if [ -n "$AWG_ROUTES" ]; then
+  IFS=',' read -r -a ROUTES <<< "$AWG_ROUTES"
+  for route in "${ROUTES[@]}"; do
+    [ -n "$route" ] || continue
+    ip route replace "$route" dev "$IFACE"
+  done
+fi

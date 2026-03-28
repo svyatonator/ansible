@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+IFACE="{{ awg_interface_name }}"
+SOCK="/var/run/amneziawg/${IFACE}.sock"
+ENV_FILE="{{ awg_config_dir }}/{{ awg_interface_name }}.env"
+AWG_ROUTES="${AWG_ROUTES:-}"
+
+if [ -f "$ENV_FILE" ]; then
+  # shellcheck disable=SC1090
+  . "$ENV_FILE"
+fi
+
+if [ -n "$AWG_ROUTES" ]; then
+  IFS=',' read -r -a ROUTES <<< "$AWG_ROUTES"
+  for route in "${ROUTES[@]}"; do
+    [ -n "$route" ] || continue
+    ip route del "$route" dev "$IFACE" >/dev/null 2>&1 || true
+  done
+fi
+
+ip link del dev "$IFACE" >/dev/null 2>&1 || true
+
+if [ -S "$SOCK" ]; then
+  rm -f "$SOCK"
+fi

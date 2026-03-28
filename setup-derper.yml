@@ -1,0 +1,202 @@
+- name: Setup DERP relay server
+  hosts: servers
+  gather_facts: true
+  become: true
+
+  vars:
+    derper_hostname: dp2.volna.ovh
+    derper_verify_client_url: https://hs.volna.ovh/verify
+    derper_verify_client_url_fail_open: false
+    derper_https_port: 443
+    derper_http_port: 80
+    derper_stun_port: 3478
+    derper_cert_mode: letsencrypt
+    derper_state_dir: /var/lib/derper
+    derper_cert_dir: "{{ derper_state_dir }}/certs"
+    derper_config_path: "{{ derper_state_dir }}/derper.yaml"
+    derper_binary_path: /usr/local/bin/derper
+    derper_service_name: derper
+    derper_go_version: 1.26.1
+    derper_go_install_root: "/usr/local/go-{{ derper_go_version }}"
+    derper_go_symlink: /usr/local/go
+    derper_go_download_dir: /usr/local/src
+    derper_go_archive: "go{{ derper_go_version }}.linux-{{ derper_go_arch_map.get(ansible_facts['architecture'], 'amd64') }}.tar.gz"
+    derper_go_download_url: "https://go.dev/dl/{{ derper_go_archive }}"
+    derper_module_version: latest
+    derper_go_arch_map:
+      x86_64: amd64
+      amd64: amd64
+      aarch64: arm64
+      arm64: arm64
+
+  pre_tasks:
+    - name: Require supported CPU architecture
+      ansible.builtin.assert:
+        that:
+          - ansible_facts['architecture'] in derper_go_arch_map
+        fail_msg: "Unsupported architecture {{ ansible_facts['architecture'] }} for Go download."
+
+  tasks:
+    - name: Install base packages
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - git
+          - tar
+        state: present
+        update_cache: true
+
+    - name: Allow HTTP traffic through UFW (if UFW is active)
+      ansible.builtin.ufw:
+        rule: allow
+        port: "{{ derper_http_port | string }}"
+        proto: tcp
+      ignore_errors: true
+
+    - name: Allow HTTPS traffic through UFW (if UFW is active)
+      ansible.builtin.ufw:
+        rule: allow
+        port: "{{ derper_https_port | string }}"
+        proto: tcp
+      ignore_errors: true
+
+    - name: Allow STUN traffic through UFW (if UFW is active)
+      ansible.builtin.ufw:
+        rule: allow
+        port: "{{ derper_stun_port | string }}"
+        proto: udp
+      ignore_errors: true
+
+    - name: Create DERP system user
+      ansible.builtin.user:
+        name: derper
+        system: true
+        shell: /usr/sbin/nologin
+        home: "{{ derper_state_dir }}"
+        create_home: false
+
+    - name: Create DERP directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner | default('derper') }}"
+        group: "{{ item.group | default('derper') }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - { path: "{{ derper_state_dir }}", mode: "0750" }
+        - { path: "{{ derper_cert_dir }}", mode: "0750" }
+        - { path: "{{ derper_go_download_dir }}", owner: "root", group: "root", mode: "0755" }
+
+    - name: Check existing derper config file
+      ansible.builtin.stat:
+        path: "{{ derper_config_path }}"
+      register: derper_config_stat
+
+    - name: Read existing derper config file
+      ansible.builtin.slurp:
+        src: "{{ derper_config_path }}"
+      register: derper_config_slurp
+      when: derper_config_stat.stat.exists
+
+    - name: Remove invalid placeholder derper config
+      ansible.builtin.file:
+        path: "{{ derper_config_path }}"
+        state: absent
+      when:
+        - derper_config_stat.stat.exists
+        - derper_config_slurp.content | b64decode | trim == '{}'
+
+    - name: Download Go toolchain archive
+      ansible.builtin.get_url:
+        url: "{{ derper_go_download_url }}"
+        dest: "{{ derper_go_download_dir }}/{{ derper_go_archive }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Check if requested Go toolchain is already installed
+      ansible.builtin.stat:
+        path: "{{ derper_go_install_root }}/bin/go"
+      register: derper_go_install_stat
+
+    - name: Create Go install root
+      ansible.builtin.file:
+        path: "{{ derper_go_install_root }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      when: not derper_go_install_stat.stat.exists
+
+    - name: Unpack Go toolchain
+      ansible.builtin.unarchive:
+        src: "{{ derper_go_download_dir }}/{{ derper_go_archive }}"
+        dest: "{{ derper_go_install_root }}"
+        remote_src: true
+        extra_opts:
+          - --strip-components=1
+      when: not derper_go_install_stat.stat.exists
+
+    - name: Point /usr/local/go to selected Go toolchain
+      ansible.builtin.file:
+        src: "{{ derper_go_install_root }}"
+        dest: "{{ derper_go_symlink }}"
+        state: link
+        force: true
+
+    - name: Ensure go binary is available in PATH
+      ansible.builtin.file:
+        src: "{{ derper_go_symlink }}/bin/go"
+        dest: /usr/local/bin/go
+        state: link
+        force: true
+
+    - name: Install derper binary from source
+      ansible.builtin.command:
+        argv:
+          - "{{ derper_go_symlink }}/bin/go"
+          - install
+          - "tailscale.com/cmd/derper@{{ derper_module_version }}"
+      environment:
+        CGO_ENABLED: "0"
+        GOBIN: /usr/local/bin
+        GOTOOLCHAIN: local
+      register: derper_go_install
+      changed_when: true
+
+    - name: Render derper systemd service
+      ansible.builtin.template:
+        src: templates/derper.service.j2
+        dest: "/etc/systemd/system/{{ derper_service_name }}.service"
+        owner: root
+        group: root
+        mode: "0644"
+      notify:
+        - Reload systemd
+        - Restart derper
+
+    - name: Ensure derper service is enabled and started
+      ansible.builtin.systemd:
+        name: "{{ derper_service_name }}"
+        enabled: true
+        state: started
+        daemon_reload: true
+
+    - name: Print derper summary
+      ansible.builtin.debug:
+        msg:
+          - "DERP hostname: {{ derper_hostname }}"
+          - "DERP verify URL: {{ derper_verify_client_url }}"
+          - "Open ports: tcp/{{ derper_http_port }}, tcp/{{ derper_https_port }}, udp/{{ derper_stun_port }}"
+          - "Headscale is not required on this host for this topology."
+
+  handlers:
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Restart derper
+      ansible.builtin.systemd:
+        name: "{{ derper_service_name }}"
+        state: restarted

@@ -1,0 +1,33 @@
+regions:
+  {{ headscale_derp_region_id }}:
+    regionid: {{ headscale_derp_region_id }}
+    regioncode: {{ headscale_derp_region_code }}
+    regionname: {{ headscale_derp_region_name }}
+    nodes:
+      - name: "{{ headscale_derp_region_id }}a"
+        regionid: {{ headscale_derp_region_id }}
+        hostname: {{ headscale_derp_hostname }}
+        ipv4: {{ headscale_public_ipv4 }}
+{% if headscale_public_ipv6 | length > 0 %}
+        ipv6: {{ headscale_public_ipv6 }}
+{% endif %}
+{% for region in headscale_extra_derp_regions | default([]) %}
+  {{ region.region_id }}:
+    regionid: {{ region.region_id }}
+    regioncode: {{ region.region_code }}
+    regionname: {{ region.region_name }}
+    nodes:
+      - name: "{{ region.region_id }}a"
+        regionid: {{ region.region_id }}
+        hostname: {{ region.hostname }}
+        ipv4: {{ region.ipv4 }}
+{% if region.ipv6 is defined and region.ipv6 | length > 0 %}
+        ipv6: {{ region.ipv6 }}
+{% endif %}
+{% if region.stun_port is defined %}
+        stunport: {{ region.stun_port }}
+{% endif %}
+{% if region.can_port_80 is defined %}
+        canport80: {{ region.can_port_80 | bool | lower }}
+{% endif %}
+{% endfor %}

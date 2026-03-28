@@ -1,0 +1,25 @@
+{%- set derper_verify_args = '' -%}
+{%- if derper_verify_client_url | default('') | length > 0 -%}
+{%- set derper_verify_args = ' -verify-client-url=' ~ derper_verify_client_url ~ ' -verify-client-url-fail-open=' ~ ('true' if derper_verify_client_url_fail_open | bool else 'false') -%}
+{%- endif -%}
+[Unit]
+Description=Tailscale DERP relay server
+Documentation=https://pkg.go.dev/tailscale.com/cmd/derper
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=derper
+Group=derper
+WorkingDirectory={{ derper_state_dir }}
+Environment=HOME={{ derper_state_dir }}
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+ExecStart={{ derper_binary_path }} -c={{ derper_config_path }} -hostname={{ derper_hostname }} -a=:{{ derper_https_port }} -http-port={{ derper_http_port }} -stun=true -stun-port={{ derper_stun_port }} -certmode={{ derper_cert_mode }} -certdir={{ derper_cert_dir }}{{ derper_verify_args }}
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

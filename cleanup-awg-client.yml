@@ -1,0 +1,80 @@
+- name: Remove AmneziaWG client artifacts from Ubuntu hosts
+  hosts: ostrov
+  gather_facts: true
+  become: true
+
+  vars:
+    awg_interface_name: "{{ awg_interface | default('awg0') }}"
+    awg_go_binary_path: /usr/local/bin/amneziawg-go
+    awg_import_binary_path: /usr/local/bin/amneziawg-import-config
+    awg_config_dir: /etc/amneziawg
+    awg_scripts_dir: /usr/local/libexec/amneziawg
+    awg_service_template_name: amneziawg-client
+    awg_service_name: "{{ awg_service_template_name }}@{{ awg_interface_name }}"
+    awg_cleanup_remove_packages: false
+
+  tasks:
+    - name: Stop and disable AWG client service if present
+      ansible.builtin.systemd:
+        name: "{{ awg_service_name }}.service"
+        state: stopped
+        enabled: false
+        daemon_reload: true
+      failed_when: false
+
+    - name: Remove AWG interface if it exists
+      ansible.builtin.command:
+        cmd: ip link del {{ awg_interface_name }}
+      register: awg_link_delete
+      failed_when: false
+      changed_when: awg_link_delete.rc == 0
+
+    - name: Remove AWG systemd template unit
+      ansible.builtin.file:
+        path: "/etc/systemd/system/{{ awg_service_template_name }}@.service"
+        state: absent
+      notify: Reload systemd
+
+    - name: Remove AWG runtime scripts and helpers
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ awg_scripts_dir }}/{{ awg_interface_name }}-up.sh"
+        - "{{ awg_scripts_dir }}/{{ awg_interface_name }}-down.sh"
+        - "{{ awg_import_binary_path }}"
+        - "{{ awg_go_binary_path }}"
+
+    - name: Remove AWG config directory
+      ansible.builtin.file:
+        path: "{{ awg_config_dir }}"
+        state: absent
+
+    - name: Remove AWG source tree
+      ansible.builtin.file:
+        path: /usr/local/src/amneziawg-go
+        state: absent
+
+    - name: Optionally remove AmneziaWG apt package
+      ansible.builtin.apt:
+        name: amneziawg-tools
+        state: absent
+        purge: true
+        autoremove: true
+      when: awg_cleanup_remove_packages | bool
+
+    - name: Check reverse SSH service state without restarting it
+      ansible.builtin.command:
+        cmd: systemctl is-active reverse-ssh.service
+      register: reverse_ssh_state
+      changed_when: false
+      failed_when: false
+
+    - name: Report reverse SSH service state
+      ansible.builtin.debug:
+        msg: "reverse-ssh.service state: {{ reverse_ssh_state.stdout | default('unknown') | trim }}"
+
+  handlers:
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true

@@ -7,7 +7,6 @@
     nginx_docker_root: /opt/nginx-docker
     nginx_container_name: nginx
     letsencrypt_webroot: /var/www/letsencrypt
-    certbot_email: ""
     certbot_cert_name: volna.ovh
     certbot_domains:
       - volna.ovh
@@ -252,7 +251,7 @@
         msg: "First certificate issuance requires contact email. Run with -e certbot_email=admin@volna.ovh"
       when:
         - not certbot_existing_cert.stat.exists
-        - certbot_email | length == 0
+        - certbot_email | default('') | length == 0
 
     - name: Issue initial certificate with webroot when missing
       ansible.builtin.command:
@@ -271,7 +270,7 @@
           - --cert-name
           - "{{ certbot_cert_name }}"
           - --email
-          - "{{ certbot_email }}"
+          - "{{ certbot_email | default('') }}"
           - --agree-tos
           - --non-interactive
       register: certbot_initial_issue
@@ -281,12 +280,12 @@
     - name: Print initial certbot issue result
       ansible.builtin.debug:
         msg: "{{ certbot_initial_issue.stdout_lines }}"
-      when: certbot_initial_issue is defined and not certbot_initial_issue.skipped
+      when: certbot_initial_issue is defined and not (certbot_initial_issue.skipped | default(false))
 
     - name: Enable TLS mode after initial certificate issuance
       ansible.builtin.set_fact:
         nginx_enable_tls: true
-      when: certbot_initial_issue is defined and not certbot_initial_issue.skipped
+      when: certbot_initial_issue is defined and not (certbot_initial_issue.skipped | default(false))
 
     - name: Rewrite nginx domain config with TLS after initial certificate issuance
       ansible.builtin.template:
@@ -296,23 +295,23 @@
         group: root
         mode: "0644"
       notify: Restart nginx docker stack
-      when: certbot_initial_issue is defined and not certbot_initial_issue.skipped
+      when: certbot_initial_issue is defined and not (certbot_initial_issue.skipped | default(false))
 
     - name: Apply nginx TLS config after initial certificate issuance
       ansible.builtin.meta: flush_handlers
-      when: certbot_initial_issue is defined and not certbot_initial_issue.skipped
+      when: certbot_initial_issue is defined and not (certbot_initial_issue.skipped | default(false))
 
     - name: Validate nginx config inside container after enabling TLS
       ansible.builtin.command:
         cmd: docker exec {{ nginx_container_name }} nginx -t
       register: nginx_test_tls
       changed_when: false
-      when: certbot_initial_issue is defined and not certbot_initial_issue.skipped
+      when: certbot_initial_issue is defined and not (certbot_initial_issue.skipped | default(false))
 
     - name: Print nginx TLS config test output
       ansible.builtin.debug:
         msg: "{{ nginx_test_tls.stderr_lines }}"
-      when: certbot_initial_issue is defined and not certbot_initial_issue.skipped
+      when: certbot_initial_issue is defined and not (certbot_initial_issue.skipped | default(false))
 
     - name: Ensure certbot deploy hook directory exists
       ansible.builtin.file:
