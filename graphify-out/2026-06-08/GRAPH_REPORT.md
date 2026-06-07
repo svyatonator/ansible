@@ -1,18 +1,13 @@
-# Graph Report - ansible  (2026-06-08)
+# Graph Report - .  (2026-06-08)
 
 ## Corpus Check
-- 10 files · ~22,180 words
+- 44 files · ~22,180 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 130 nodes · 115 edges · 32 communities (13 shown, 19 thin omitted)
-- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 6 edges (avg confidence: 0.92)
+- 138 nodes · 121 edges · 34 communities (13 shown, 21 thin omitted)
+- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 11 edges (avg confidence: 0.92)
 - Token cost: 0 input · 0 output
-
-## Graph Freshness
-- Built from commit: `0811fa54`
-- Run `git rev-parse HEAD` and compare to check if the graph is stale.
-- Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - [[_COMMUNITY_Project Indices & Bootstrapping|Project Indices & Bootstrapping]]
@@ -45,8 +40,10 @@
 - [[_COMMUNITY_MTProto Proxy|MTProto Proxy]]
 - [[_COMMUNITY_OpenClaw Docker Deployment|OpenClaw Docker Deployment]]
 - [[_COMMUNITY_XrayVLESS Scaffolding|Xray/VLESS Scaffolding]]
+- [[_COMMUNITY_Gemini Settings|Gemini Settings]]
 - [[_COMMUNITY_OpenClaw Public Config|OpenClaw Public Config]]
 - [[_COMMUNITY_OpenClaw Vault Secrets|OpenClaw Vault Secrets]]
+- [[_COMMUNITY_Amnezia VPN Parser|Amnezia VPN Parser]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `Операционная документация OpenClaw` - 11 edges
@@ -63,14 +60,14 @@
 ## Surprising Connections (you probably didn't know these)
 - `AI Agent Index` --semantically_similar_to--> `Repository Context Index`  [INFERRED] [semantically similar]
   AI_INDEX.md → CONTEXT_INDEX.md
+- `Nginx Docker Static Sites` --semantically_similar_to--> `Nginx Volna.ovh Static Sites Setup`  [INFERRED] [semantically similar]
+  setup-nginx-docker-volna-ovh.yml → setup-all settings-volna-ovh.yml
 - `AmneziaWG LXC Client Setup` --semantically_similar_to--> `AmneziaWG Host Client Setup`  [INFERRED] [semantically similar]
   setup-awg-client-lxc.yml → setup-awg-client.yml
 - `AmneziaWG Config Importer` --references--> `Ostrov Group Variables`  [EXTRACTED]
   scripts/import-awg-config.py → group_vars/ostrov.yml
-- `Bootstrap: Root SSH Key to New Sudo User` --shares_data_with--> `Global Variables (All Groups)`  [INFERRED]
-  bootstrap-1-ssh-key-to-root-add-new-sudouser.yml → group_vars/all.yml
-- `Tailscale Mesh VPN Client` --references--> `Headscale with Embedded DERP`  [INFERRED]
-  setup-tailscale-client.yml → setup-headscale-derp-docker.yml
+- `Bootstrap: Root SSH Key to New Sudo User` --conceptually_related_to--> `Bootstrap: Remove Root Access`  [INFERRED]
+  bootstrap-1-ssh-key-to-root-add-new-sudouser.yml → bootstrap-2-remove-root-access.yml
 
 ## Import Cycles
 - None detected.
@@ -82,7 +79,7 @@
 - **Secure Tunneling & VPN Infrastructure** — ansible_setup_awg_client_playbook, ansible_setup_tailscale_client_playbook, ansible_setup_xray_client_docker_playbook, ansible_setup_mtproto_docker_playbook, ansible_setup_derper_playbook, ansible_setup_headscale_derp_docker_playbook [INFERRED 0.85]
 - **Ostrov Connectivity Topology** — ansible_ostrov_doc, ansible_setup_lxc_ostrov_playbook, ansible_concept_reverse_ssh_tunnel [INFERRED 0.95]
 
-## Communities (32 total, 19 thin omitted)
+## Communities (34 total, 21 thin omitted)
 
 ### Community 0 - "Project Indices & Bootstrapping"
 Cohesion: 0.14
@@ -113,16 +110,16 @@ Cohesion: 0.25
 Nodes (7): Ostrov, Systemd unit на ostrov, Важные детали, Как подключаться вручную, Как работает Ansible, Схема доступа, Что нельзя забывать
 
 ### Community 7 - "AI Agent & Bootstrap Automation"
-Cohesion: 0.40
-Nodes (5): Add New Sudo User Playbook, AI Agent Index, Bootstrap: Root SSH Key to New Sudo User, Repository Context Index, Global Variables (All Groups)
+Cohesion: 0.29
+Nodes (7): Add New Sudo User Playbook, AI Agent Index, Bootstrap: Root SSH Key to New Sudo User, Bootstrap: Remove Root Access, Repository Context Index, Global Variables (All Groups), Bootstrap Group Variables
 
 ### Community 8 - "LXC Workflow & Playbook Tips"
 Cohesion: 0.29
 Nodes (7): Fixed backup/restore (LXC), Telegram allowlist, Актуально: LXC workflow (Ubuntu 22), Быстрые post-check команды (LXC), Важно по запуску плейбуков, Важные пути (LXC), Частая проблема на хостах с Docker
 
 ### Community 9 - "Security & Database Services (CouchDB, Fail2ban)"
-Cohesion: 0.67
-Nodes (3): Reverse SSH Tunneling Mechanism, Ostrov Machine Documentation, Ostrov LXC Provisioning with Reverse SSH
+Cohesion: 0.33
+Nodes (6): Reverse SSH Tunneling Mechanism, Ostrov Machine Documentation, Cockpit Web Console with 2FA, CouchDB for Obsidian LiveSync, Fail2ban Security Hardening, Ostrov LXC Provisioning with Reverse SSH
 
 ### Community 11 - "VPN Config & Xray Extraction"
 Cohesion: 0.80
@@ -137,20 +134,20 @@ Cohesion: 0.67
 Nodes (3): Ostrov LXC Group Variables, Ostrov Group Variables, AmneziaWG Config Importer
 
 ## Knowledge Gaps
-- **88 isolated node(s):** `BeforeTool`, `graphify`, `Namespace`, `SectionProxy`, `User Management Variables` (+83 more)
+- **92 isolated node(s):** `Namespace`, `SectionProxy`, `User Management Variables`, `OpenClaw Core Variables`, `OpenClaw Backup Variables` (+87 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **19 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **21 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `AI Agent Index (Ansible Repository)` connect `Project Indices & Bootstrapping` to `Core Ansible Infrastructure`, `OpenClaw Configuration Variables`?**
-  _High betweenness centrality (0.048) - this node is a cross-community bridge._
+  _High betweenness centrality (0.043) - this node is a cross-community bridge._
 - **Why does `File Reference Map` connect `Core Ansible Infrastructure` to `Project Indices & Bootstrapping`?**
-  _High betweenness centrality (0.030) - this node is a cross-community bridge._
+  _High betweenness centrality (0.027) - this node is a cross-community bridge._
 - **Why does `Quick Variable Reference` connect `OpenClaw Configuration Variables` to `Project Indices & Bootstrapping`?**
-  _High betweenness centrality (0.024) - this node is a cross-community bridge._
-- **What connects `BeforeTool`, `graphify`, `Namespace` to the rest of the system?**
-  _88 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _High betweenness centrality (0.021) - this node is a cross-community bridge._
+- **What connects `Namespace`, `SectionProxy`, `User Management Variables` to the rest of the system?**
+  _92 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Project Indices & Bootstrapping` be split into smaller, more focused modules?**
   _Cohesion score 0.14285714285714285 - nodes in this community are weakly interconnected._

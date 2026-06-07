@@ -76,105 +76,6 @@
   },
   "nodes": [
     {
-      "label": "settings.json",
-      "file_type": "code",
-      "source_file": ".gemini/settings.json",
-      "source_location": "L1",
-      "id": "gemini_settings",
-      "community": 13,
-      "norm_label": "settings.json"
-    },
-    {
-      "label": "hooks",
-      "file_type": "code",
-      "source_file": ".gemini/settings.json",
-      "source_location": "L2",
-      "id": "gemini_settings_hooks",
-      "community": 13,
-      "norm_label": "hooks"
-    },
-    {
-      "label": "BeforeTool",
-      "file_type": "code",
-      "source_file": ".gemini/settings.json",
-      "source_location": "L3",
-      "id": "gemini_settings_hooks_beforetool",
-      "community": 13,
-      "norm_label": "beforetool"
-    },
-    {
-      "label": "GEMINI.md",
-      "file_type": "document",
-      "source_file": "GEMINI.md",
-      "source_location": "L1",
-      "id": "gemini",
-      "community": 23,
-      "norm_label": "gemini.md"
-    },
-    {
-      "label": "graphify",
-      "file_type": "document",
-      "source_file": "GEMINI.md",
-      "source_location": "L1",
-      "id": "gemini_graphify",
-      "community": 23,
-      "norm_label": "graphify"
-    },
-    {
-      "label": "parse-amnezia-vpn.py",
-      "file_type": "code",
-      "source_file": "scripts/parse-amnezia-vpn.py",
-      "source_location": "L1",
-      "id": "scripts_parse_amnezia_vpn",
-      "community": 11,
-      "norm_label": "parse-amnezia-vpn.py"
-    },
-    {
-      "label": "fail()",
-      "file_type": "code",
-      "source_file": "scripts/parse-amnezia-vpn.py",
-      "source_location": "L13",
-      "id": "scripts_parse_amnezia_vpn_fail",
-      "community": 11,
-      "norm_label": "fail()"
-    },
-    {
-      "label": "decode_export()",
-      "file_type": "code",
-      "source_file": "scripts/parse-amnezia-vpn.py",
-      "source_location": "L18",
-      "id": "scripts_parse_amnezia_vpn_decode_export",
-      "community": 11,
-      "norm_label": "decode_export()"
-    },
-    {
-      "label": "extract_xray_config()",
-      "file_type": "code",
-      "source_file": "scripts/parse-amnezia-vpn.py",
-      "source_location": "L47",
-      "id": "scripts_parse_amnezia_vpn_extract_xray_config",
-      "community": 11,
-      "norm_label": "extract_xray_config()"
-    },
-    {
-      "label": "build_summary()",
-      "file_type": "code",
-      "source_file": "scripts/parse-amnezia-vpn.py",
-      "source_location": "L71",
-      "id": "scripts_parse_amnezia_vpn_build_summary",
-      "community": 11,
-      "norm_label": "build_summary()"
-    },
-    {
-      "label": "main()",
-      "file_type": "code",
-      "source_file": "scripts/parse-amnezia-vpn.py",
-      "source_location": "L118",
-      "id": "scripts_parse_amnezia_vpn_main",
-      "community": 11,
-      "norm_label": "main()"
-    },
-    {
       "label": "import-awg-config.py",
       "file_type": "code",
       "source_file": "scripts/import-awg-config.py",
@@ -328,6 +229,60 @@
       "community": 10,
       "norm_label": "usage()",
       "id": "scripts_openclaw_lxc_fixed_restore_usage"
+    },
+    {
+      "label": "parse-amnezia-vpn.py",
+      "file_type": "code",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L1",
+      "community": 11,
+      "norm_label": "parse-amnezia-vpn.py",
+      "id": "scripts_parse_amnezia_vpn"
+    },
+    {
+      "label": "fail()",
+      "file_type": "code",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L13",
+      "community": 11,
+      "norm_label": "fail()",
+      "id": "scripts_parse_amnezia_vpn_fail"
+    },
+    {
+      "label": "decode_export()",
+      "file_type": "code",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L18",
+      "community": 11,
+      "norm_label": "decode_export()",
+      "id": "scripts_parse_amnezia_vpn_decode_export"
+    },
+    {
+      "label": "extract_xray_config()",
+      "file_type": "code",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L47",
+      "community": 11,
+      "norm_label": "extract_xray_config()",
+      "id": "scripts_parse_amnezia_vpn_extract_xray_config"
+    },
+    {
+      "label": "build_summary()",
+      "file_type": "code",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L71",
+      "community": 11,
+      "norm_label": "build_summary()",
+      "id": "scripts_parse_amnezia_vpn_build_summary"
+    },
+    {
+      "label": "main()",
+      "file_type": "code",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L118",
+      "community": 11,
+      "norm_label": "main()",
+      "id": "scripts_parse_amnezia_vpn_main"
     },
     {
       "label": "AI_INDEX.md",
@@ -960,441 +915,392 @@
       "id": "ostrov_\u0447\u0442\u043e_\u043d\u0435\u043b\u044c\u0437\u044f_\u0437\u0430\u0431\u044b\u0432\u0430\u0442\u044c"
     },
     {
+      "label": "settings.json",
+      "file_type": "code",
+      "source_file": ".gemini/settings.json",
+      "source_location": "L1",
+      "id": "gemini_settings",
+      "community": 13,
+      "norm_label": "settings.json"
+    },
+    {
+      "label": "hooks",
+      "file_type": "code",
+      "source_file": ".gemini/settings.json",
+      "source_location": "L2",
+      "id": "gemini_settings_hooks",
+      "community": 13,
+      "norm_label": "hooks"
+    },
+    {
+      "label": "BeforeTool",
+      "file_type": "code",
+      "source_file": ".gemini/settings.json",
+      "source_location": "L3",
+      "id": "gemini_settings_hooks_beforetool",
+      "community": 13,
+      "norm_label": "beforetool"
+    },
+    {
+      "label": "Gemini Settings",
+      "file_type": "code",
+      "source_file": ".gemini/settings.json",
+      "id": "gemini_settings_config",
+      "community": 30,
+      "norm_label": "gemini settings"
+    },
+    {
       "label": "AmneziaWG Config Importer",
       "file_type": "code",
       "source_file": "scripts/import-awg-config.py",
+      "id": "scripts_import_awg_config_script",
       "community": 14,
-      "norm_label": "amneziawg config importer",
-      "id": "scripts_import_awg_config_script"
+      "norm_label": "amneziawg config importer"
+    },
+    {
+      "label": "Amnezia VPN Export Parser",
+      "file_type": "code",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "id": "scripts_parse_amnezia_vpn_script",
+      "community": 33,
+      "norm_label": "amnezia vpn export parser"
     },
     {
       "label": "AI Agent Index",
       "file_type": "document",
       "source_file": "AI_INDEX.md",
       "rationale": "Optimized index for AI agents to quickly locate variables, files, and configurations.",
+      "id": "ansible_ai_index_document",
       "community": 7,
-      "norm_label": "ai agent index",
-      "id": "ansible_ai_index_document"
+      "norm_label": "ai agent index"
     },
     {
       "label": "Repository Context Index",
       "file_type": "document",
       "source_file": "CONTEXT_INDEX.md",
       "rationale": "Overview of host setup, user management, and service deployment.",
+      "id": "ansible_context_index_document",
       "community": 7,
-      "norm_label": "repository context index",
-      "id": "ansible_context_index_document"
+      "norm_label": "repository context index"
+    },
+    {
+      "label": "Gemini Knowledge Graph Rules",
+      "file_type": "document",
+      "source_file": "GEMINI.md",
+      "rationale": "Rules for using the graphify-powered knowledge graph for codebase navigation.",
+      "id": "ansible_gemini_document",
+      "community": 23,
+      "norm_label": "gemini knowledge graph rules"
     },
     {
       "label": "OpenClaw Operations Manual",
       "file_type": "document",
       "source_file": "OPENCLAW_OPERATIONS.md",
       "rationale": "Operations for OpenClaw (paths, backup/restore, SSH-tunnel).",
+      "id": "ansible_openclaw_operations_document",
       "community": 10,
-      "norm_label": "openclaw operations manual",
-      "id": "ansible_openclaw_operations_document"
+      "norm_label": "openclaw operations manual"
     },
     {
       "label": "Add New Sudo User Playbook",
       "file_type": "code",
       "source_file": "add-new-sudouser.yml",
+      "id": "ansible_add_new_sudouser_playbook",
       "community": 7,
-      "norm_label": "add new sudo user playbook",
-      "id": "ansible_add_new_sudouser_playbook"
+      "norm_label": "add new sudo user playbook"
     },
     {
       "label": "Bootstrap: Root SSH Key to New Sudo User",
       "file_type": "code",
       "source_file": "bootstrap-1-ssh-key-to-root-add-new-sudouser.yml",
+      "id": "ansible_bootstrap_1_ssh_key_to_root_add_new_sudouser_playbook",
       "community": 7,
-      "norm_label": "bootstrap: root ssh key to new sudo user",
-      "id": "ansible_bootstrap_1_ssh_key_to_root_add_new_sudouser_playbook"
+      "norm_label": "bootstrap: root ssh key to new sudo user"
+    },
+    {
+      "label": "Bootstrap: Remove Root Access",
+      "file_type": "code",
+      "source_file": "bootstrap-2-remove-root-access.yml",
+      "id": "ansible_bootstrap_2_remove_root_access_playbook",
+      "community": 7,
+      "norm_label": "bootstrap: remove root access"
     },
     {
       "label": "Cleanup AmneziaWG Client",
       "file_type": "code",
       "source_file": "cleanup-awg-client.yml",
+      "id": "ansible_cleanup_awg_client_playbook",
       "community": 20,
-      "norm_label": "cleanup amneziawg client",
-      "id": "ansible_cleanup_awg_client_playbook"
+      "norm_label": "cleanup amneziawg client"
     },
     {
       "label": "Cleanup OpenClaw Docker Stack",
       "file_type": "code",
       "source_file": "cleanup-openclaw-docker-backup.yml",
+      "id": "ansible_cleanup_openclaw_docker_backup_playbook",
       "community": 21,
-      "norm_label": "cleanup openclaw docker stack",
-      "id": "ansible_cleanup_openclaw_docker_backup_playbook"
+      "norm_label": "cleanup openclaw docker stack"
+    },
+    {
+      "label": "Configure Nginx for Headscale/DERP",
+      "file_type": "code",
+      "source_file": "config-nginx-docker.yml",
+      "id": "ansible_config_nginx_docker_playbook",
+      "community": 15,
+      "norm_label": "configure nginx for headscale/derp"
     },
     {
       "label": "Global Variables (All Groups)",
       "file_type": "code",
       "source_file": "group_vars/all.yml",
+      "id": "group_vars_all_vars",
       "community": 7,
-      "norm_label": "global variables (all groups)",
-      "id": "group_vars_all_vars"
+      "norm_label": "global variables (all groups)"
     },
     {
       "label": "Bootstrap Group Variables",
       "file_type": "code",
       "source_file": "group_vars/bootstrap.yml",
-      "community": 29,
-      "norm_label": "bootstrap group variables",
-      "id": "group_vars_bootstrap_vars"
+      "id": "group_vars_bootstrap_vars",
+      "community": 7,
+      "norm_label": "bootstrap group variables"
     },
     {
       "label": "OpenClaw Public Variables",
       "file_type": "code",
       "source_file": "group_vars/openclaw.yml",
+      "id": "group_vars_openclaw_vars",
       "community": 31,
-      "norm_label": "openclaw public variables",
-      "id": "group_vars_openclaw_vars"
+      "norm_label": "openclaw public variables"
     },
     {
       "label": "OpenClaw Secret Variables (Vault)",
       "file_type": "code",
       "source_file": "group_vars/openclaw_vault.yml",
+      "id": "group_vars_openclaw_vault_vars",
       "community": 32,
-      "norm_label": "openclaw secret variables (vault)",
-      "id": "group_vars_openclaw_vault_vars"
+      "norm_label": "openclaw secret variables (vault)"
     },
     {
       "label": "Ostrov Group Variables",
       "file_type": "code",
       "source_file": "group_vars/ostrov.yml",
+      "id": "group_vars_ostrov_vars",
       "community": 14,
-      "norm_label": "ostrov group variables",
-      "id": "group_vars_ostrov_vars"
+      "norm_label": "ostrov group variables"
     },
     {
       "label": "Ostrov LXC Group Variables",
       "file_type": "code",
       "source_file": "group_vars/ostrov_lxc.yml",
+      "id": "group_vars_ostrov_lxc_vars",
       "community": 14,
-      "norm_label": "ostrov lxc group variables",
-      "id": "group_vars_ostrov_lxc_vars"
+      "norm_label": "ostrov lxc group variables"
     },
     {
       "label": "Production Server Variables",
       "file_type": "code",
       "source_file": "group_vars/servers.yml",
+      "id": "group_vars_servers_vars",
       "community": 15,
-      "norm_label": "production server variables",
-      "id": "group_vars_servers_vars"
+      "norm_label": "production server variables"
     },
     {
       "label": "Ostrov Machine Documentation",
       "file_type": "document",
       "source_file": "ostrov.md",
+      "id": "ansible_ostrov_doc",
       "community": 9,
-      "norm_label": "ostrov machine documentation",
-      "id": "ansible_ostrov_doc"
+      "norm_label": "ostrov machine documentation"
     },
     {
       "label": "Nginx Volna.ovh Static Sites Setup",
       "file_type": "code",
       "source_file": "setup-all settings-volna-ovh.yml",
+      "id": "ansible_setup_all_settings_volna_ovh_playbook",
       "community": 17,
-      "norm_label": "nginx volna.ovh static sites setup",
-      "id": "ansible_setup_all_settings_volna_ovh_playbook"
+      "norm_label": "nginx volna.ovh static sites setup"
     },
     {
       "label": "Auditd Command Logging Setup",
       "file_type": "code",
       "source_file": "setup-auditd.yml",
+      "id": "ansible_setup_auditd_playbook",
       "community": 24,
-      "norm_label": "auditd command logging setup",
-      "id": "ansible_setup_auditd_playbook"
+      "norm_label": "auditd command logging setup"
     },
     {
       "label": "AmneziaWG LXC Client Setup",
       "file_type": "code",
       "source_file": "setup-awg-client-lxc.yml",
+      "id": "ansible_setup_awg_client_lxc_playbook",
       "community": 18,
-      "norm_label": "amneziawg lxc client setup",
-      "id": "ansible_setup_awg_client_lxc_playbook"
+      "norm_label": "amneziawg lxc client setup"
     },
     {
       "label": "AmneziaWG Host Client Setup",
       "file_type": "code",
       "source_file": "setup-awg-client.yml",
+      "id": "ansible_setup_awg_client_playbook",
       "community": 18,
-      "norm_label": "amneziawg host client setup",
-      "id": "ansible_setup_awg_client_playbook"
+      "norm_label": "amneziawg host client setup"
     },
     {
       "label": "Cockpit Web Console with 2FA",
       "file_type": "code",
       "source_file": "setup-cockpit.yml",
-      "community": 27,
-      "norm_label": "cockpit web console with 2fa",
-      "id": "ansible_setup_cockpit_playbook"
+      "id": "ansible_setup_cockpit_playbook",
+      "community": 9,
+      "norm_label": "cockpit web console with 2fa"
+    },
+    {
+      "label": "CouchDB for Obsidian LiveSync",
+      "file_type": "code",
+      "source_file": "setup-couchdb-ostrov.yml",
+      "id": "ansible_setup_couchdb_ostrov_playbook",
+      "community": 9,
+      "norm_label": "couchdb for obsidian livesync"
     },
     {
       "label": "Tailscale DERP Relay Setup",
       "file_type": "code",
       "source_file": "setup-derper.yml",
+      "id": "ansible_setup_derper_playbook",
       "community": 25,
-      "norm_label": "tailscale derp relay setup",
-      "id": "ansible_setup_derper_playbook"
+      "norm_label": "tailscale derp relay setup"
+    },
+    {
+      "label": "Fail2ban Security Hardening",
+      "file_type": "code",
+      "source_file": "setup-fail2ban.yml",
+      "id": "ansible_setup_fail2ban_playbook",
+      "community": 9,
+      "norm_label": "fail2ban security hardening"
     },
     {
       "label": "Headscale with Embedded DERP",
       "file_type": "code",
       "source_file": "setup-headscale-derp-docker.yml",
+      "id": "ansible_setup_headscale_derp_docker_playbook",
       "community": 19,
-      "norm_label": "headscale with embedded derp",
-      "id": "ansible_setup_headscale_derp_docker_playbook"
+      "norm_label": "headscale with embedded derp"
     },
     {
       "label": "Nginx and Certbot Basic Install",
       "file_type": "code",
       "source_file": "setup-istall-nginx.yml",
+      "id": "ansible_setup_istall_nginx_playbook",
       "community": 26,
-      "norm_label": "nginx and certbot basic install",
-      "id": "ansible_setup_istall_nginx_playbook"
+      "norm_label": "nginx and certbot basic install"
     },
     {
       "label": "Ostrov LXC Provisioning with Reverse SSH",
       "file_type": "code",
       "source_file": "setup-lxc-ostrov.yml",
+      "id": "ansible_setup_lxc_ostrov_playbook",
       "community": 9,
-      "norm_label": "ostrov lxc provisioning with reverse ssh",
-      "id": "ansible_setup_lxc_ostrov_playbook"
+      "norm_label": "ostrov lxc provisioning with reverse ssh"
+    },
+    {
+      "label": "MTProto Telegram Proxy",
+      "file_type": "code",
+      "source_file": "setup-mtproto-docker.yml",
+      "id": "ansible_setup_mtproto_docker_playbook",
+      "community": 27,
+      "norm_label": "mtproto telegram proxy"
+    },
+    {
+      "label": "Nginx Docker Static Sites",
+      "file_type": "code",
+      "source_file": "setup-nginx-docker-volna-ovh.yml",
+      "id": "ansible_setup_nginx_docker_volna_ovh_playbook",
+      "community": 17,
+      "norm_label": "nginx docker static sites"
     },
     {
       "label": "OpenClaw AI Docker Deployment",
       "file_type": "code",
       "source_file": "setup-openclaw-docker.yml",
+      "id": "ansible_setup_openclaw_docker_playbook",
       "community": 28,
-      "norm_label": "openclaw ai docker deployment",
-      "id": "ansible_setup_openclaw_docker_playbook"
+      "norm_label": "openclaw ai docker deployment"
     },
     {
       "label": "OpenClaw LXC Fixed Backup Policy",
       "file_type": "code",
       "source_file": "setup-openclaw-lxc-fixed-backup.yml",
+      "id": "ansible_setup_openclaw_lxc_fixed_backup_playbook",
       "community": 12,
-      "norm_label": "openclaw lxc fixed backup policy",
-      "id": "ansible_setup_openclaw_lxc_fixed_backup_playbook"
+      "norm_label": "openclaw lxc fixed backup policy"
     },
     {
       "label": "OpenClaw Foundry Plugin Install",
       "file_type": "code",
       "source_file": "setup-openclaw-lxc-foundry-plugin.yml",
+      "id": "ansible_setup_openclaw_lxc_foundry_plugin_playbook",
       "community": 12,
-      "norm_label": "openclaw foundry plugin install",
-      "id": "ansible_setup_openclaw_lxc_foundry_plugin_playbook"
+      "norm_label": "openclaw foundry plugin install"
     },
     {
       "label": "OpenClaw AI LXC Deployment",
       "file_type": "code",
       "source_file": "setup-openclaw-lxc.yml",
+      "id": "ansible_setup_openclaw_lxc_playbook",
       "community": 12,
-      "norm_label": "openclaw ai lxc deployment",
-      "id": "ansible_setup_openclaw_lxc_playbook"
+      "norm_label": "openclaw ai lxc deployment"
     },
     {
       "label": "SSH Login Telegram Notifier",
       "file_type": "code",
       "source_file": "setup-ssh-login-telegram-alert.yml",
+      "id": "ansible_setup_ssh_login_telegram_alert_playbook",
       "community": 16,
-      "norm_label": "ssh login telegram notifier",
-      "id": "ansible_setup_ssh_login_telegram_alert_playbook"
+      "norm_label": "ssh login telegram notifier"
     },
     {
       "label": "Tailscale Mesh VPN Client",
       "file_type": "code",
       "source_file": "setup-tailscale-client.yml",
+      "id": "ansible_setup_tailscale_client_playbook",
       "community": 19,
-      "norm_label": "tailscale mesh vpn client",
-      "id": "ansible_setup_tailscale_client_playbook"
+      "norm_label": "tailscale mesh vpn client"
+    },
+    {
+      "label": "Xray/VLESS Client Scaffolding",
+      "file_type": "code",
+      "source_file": "setup-xray-client-docker.yml",
+      "id": "ansible_setup_xray_client_docker_playbook",
+      "community": 29,
+      "norm_label": "xray/vless client scaffolding"
     },
     {
       "label": "Telegram Bot Alert Vault",
       "file_type": "code",
       "source_file": "group_vars/telegram-bot-alert_vault.yml",
+      "id": "ansible_group_vars_telegram_bot_alert_vault",
       "community": 16,
-      "norm_label": "telegram bot alert vault",
-      "id": "ansible_group_vars_telegram_bot_alert_vault"
+      "norm_label": "telegram bot alert vault"
     },
     {
       "label": "Reverse SSH Tunneling Mechanism",
       "file_type": "concept",
       "source_file": "ostrov.md",
       "rationale": "Enables remote access to machines behind multiple NATs by initiating an outbound connection to a public relay (priboi) which forwards incoming traffic back to the source.",
+      "id": "ansible_concept_reverse_ssh_tunnel",
       "community": 9,
-      "norm_label": "reverse ssh tunneling mechanism",
-      "id": "ansible_concept_reverse_ssh_tunnel"
+      "norm_label": "reverse ssh tunneling mechanism"
     },
     {
       "label": "OpenClaw Lifecycle Management",
       "file_type": "concept",
       "source_file": "setup-openclaw-lxc.yml",
       "rationale": "Supports both Docker and LXC deployment patterns for the OpenClaw AI framework, including automated backups and plugin management.",
+      "id": "ansible_concept_openclaw_orchestration",
       "community": 22,
-      "norm_label": "openclaw lifecycle management",
-      "id": "ansible_concept_openclaw_orchestration"
+      "norm_label": "openclaw lifecycle management"
     }
   ],
   "links": [
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": ".gemini/settings.json",
-      "source_location": "L2",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "gemini_settings",
-      "target": "gemini_settings_hooks"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": ".gemini/settings.json",
-      "source_location": "L3",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "gemini_settings_hooks",
-      "target": "gemini_settings_hooks_beforetool"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "GEMINI.md",
-      "source_location": "L1",
-      "weight": 1.0,
-      "source": "gemini",
-      "target": "gemini_graphify",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/parse-amnezia-vpn.py",
-      "source_location": "L71",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "scripts_parse_amnezia_vpn",
-      "target": "scripts_parse_amnezia_vpn_build_summary"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/parse-amnezia-vpn.py",
-      "source_location": "L18",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "scripts_parse_amnezia_vpn",
-      "target": "scripts_parse_amnezia_vpn_decode_export"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/parse-amnezia-vpn.py",
-      "source_location": "L47",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "scripts_parse_amnezia_vpn",
-      "target": "scripts_parse_amnezia_vpn_extract_xray_config"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/parse-amnezia-vpn.py",
-      "source_location": "L13",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "scripts_parse_amnezia_vpn",
-      "target": "scripts_parse_amnezia_vpn_fail"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/parse-amnezia-vpn.py",
-      "source_location": "L118",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "scripts_parse_amnezia_vpn",
-      "target": "scripts_parse_amnezia_vpn_main"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/parse-amnezia-vpn.py",
-      "source_location": "L74",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "scripts_parse_amnezia_vpn_build_summary",
-      "target": "scripts_parse_amnezia_vpn_fail"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/parse-amnezia-vpn.py",
-      "source_location": "L20",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "scripts_parse_amnezia_vpn_decode_export",
-      "target": "scripts_parse_amnezia_vpn_fail"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/parse-amnezia-vpn.py",
-      "source_location": "L50",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "scripts_parse_amnezia_vpn_extract_xray_config",
-      "target": "scripts_parse_amnezia_vpn_fail"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/parse-amnezia-vpn.py",
-      "source_location": "L120",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "scripts_parse_amnezia_vpn_main",
-      "target": "scripts_parse_amnezia_vpn_fail"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/parse-amnezia-vpn.py",
-      "source_location": "L127",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "scripts_parse_amnezia_vpn_main",
-      "target": "scripts_parse_amnezia_vpn_decode_export"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/parse-amnezia-vpn.py",
-      "source_location": "L128",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "scripts_parse_amnezia_vpn_main",
-      "target": "scripts_parse_amnezia_vpn_extract_xray_config"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/parse-amnezia-vpn.py",
-      "source_location": "L129",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "scripts_parse_amnezia_vpn_main",
-      "target": "scripts_parse_amnezia_vpn_build_summary"
-    },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
@@ -1609,6 +1515,133 @@
       "confidence_score": 1.0,
       "source": "scripts_openclaw_lxc_fixed_restore",
       "target": "scripts_openclaw_lxc_fixed_restore_usage"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L71",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn",
+      "target": "scripts_parse_amnezia_vpn_build_summary"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L18",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn",
+      "target": "scripts_parse_amnezia_vpn_decode_export"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L47",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn",
+      "target": "scripts_parse_amnezia_vpn_extract_xray_config"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L13",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn",
+      "target": "scripts_parse_amnezia_vpn_fail"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L118",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn",
+      "target": "scripts_parse_amnezia_vpn_main"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L74",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn_build_summary",
+      "target": "scripts_parse_amnezia_vpn_fail"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L20",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn_decode_export",
+      "target": "scripts_parse_amnezia_vpn_fail"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L50",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn_extract_xray_config",
+      "target": "scripts_parse_amnezia_vpn_fail"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L120",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn_main",
+      "target": "scripts_parse_amnezia_vpn_fail"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L127",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn_main",
+      "target": "scripts_parse_amnezia_vpn_decode_export"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L128",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn_main",
+      "target": "scripts_parse_amnezia_vpn_extract_xray_config"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L129",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn_main",
+      "target": "scripts_parse_amnezia_vpn_build_summary"
     },
     {
       "relation": "contains",
@@ -2271,6 +2304,26 @@
       "target": "ostrov_\u0447\u0442\u043e_\u043d\u0435\u043b\u044c\u0437\u044f_\u0437\u0430\u0431\u044b\u0432\u0430\u0442\u044c"
     },
     {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".gemini/settings.json",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "gemini_settings",
+      "target": "gemini_settings_hooks",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".gemini/settings.json",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "gemini_settings_hooks",
+      "target": "gemini_settings_hooks_beforetool",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "references",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -2303,12 +2356,36 @@
       "target": "group_vars_all_vars"
     },
     {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "bootstrap-1-ssh-key-to-root-add-new-sudouser.yml",
+      "source": "ansible_bootstrap_1_ssh_key_to_root_add_new_sudouser_playbook",
+      "target": "ansible_bootstrap_2_remove_root_access_playbook"
+    },
+    {
       "relation": "shares_data_with",
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "bootstrap-1-ssh-key-to-root-add-new-sudouser.yml",
       "source": "ansible_bootstrap_1_ssh_key_to_root_add_new_sudouser_playbook",
       "target": "group_vars_all_vars"
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "bootstrap-2-remove-root-access.yml",
+      "source": "ansible_bootstrap_2_remove_root_access_playbook",
+      "target": "group_vars_bootstrap_vars"
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "config-nginx-docker.yml",
+      "source": "ansible_config_nginx_docker_playbook",
+      "target": "group_vars_servers_vars"
     },
     {
       "relation": "semantically_similar_to",
@@ -2327,12 +2404,44 @@
       "target": "ansible_concept_reverse_ssh_tunnel"
     },
     {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "setup-couchdb-ostrov.yml",
+      "source": "ansible_setup_couchdb_ostrov_playbook",
+      "target": "ansible_ostrov_doc"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "setup-nginx-docker-volna-ovh.yml",
+      "source": "ansible_setup_nginx_docker_volna_ovh_playbook",
+      "target": "ansible_setup_all_settings_volna_ovh_playbook"
+    },
+    {
       "relation": "semantically_similar_to",
       "confidence": "INFERRED",
       "confidence_score": 0.85,
       "source_file": "setup-awg-client-lxc.yml",
       "source": "ansible_setup_awg_client_lxc_playbook",
       "target": "ansible_setup_awg_client_playbook"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "setup-fail2ban.yml",
+      "source": "ansible_setup_fail2ban_playbook",
+      "target": "ansible_setup_cockpit_playbook"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "setup-fail2ban.yml",
+      "source": "ansible_setup_fail2ban_playbook",
+      "target": "ansible_setup_couchdb_ostrov_playbook"
     },
     {
       "relation": "references",
@@ -2446,5 +2555,5 @@
       "source_file": "ostrov.md"
     }
   ],
-  "built_at_commit": "0811fa5455730afc70492fcf1223ccdb5008f692"
+  "built_at_commit": "55350671152c4e83f1fb24f0729f310a8dc1195b"
 }
