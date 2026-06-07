@@ -1,0 +1,9 @@
+services:
+  xray-client:
+    image: {{ xray_client_image }}
+    container_name: {{ xray_client_container_name }}
+    restart: unless-stopped
+    ports:
+      - "{{ xray_client_socks_bind }}:{{ xray_client_socks_port }}:{{ xray_client_socks_port }}"
+    volumes:
+      - "{{ xray_client_config_path }}:/etc/xray/config.json:ro"

@@ -1,0 +1,74 @@
+[DEFAULT]
+# Основные параметры блокировки
+bantime = 1h
+findtime = 15m
+maxretry = 5
+
+# Игнорируемые IP (локальные сети)
+ignoreip = 127.0.0.1/8 ::1
+
+# Отключаем email уведомления
+destemail = root@localhost
+sender = fail2ban@localhost
+action = %(action_)s
+
+{% if nginx_fail2ban_enabled | bool %}
+[nginx-couchdb-auth]
+enabled = true
+port = http,https
+filter = nginx-couchdb-auth
+logpath = {{ nginx_fail2ban_logpath }}
+backend = auto
+maxretry = 10
+findtime = 10m
+bantime = 1h
+action = %(action_)s
+
+[nginx-couchdb-auth-recidive]
+enabled = true
+filter = nginx-couchdb-auth-recidive
+logpath = /var/log/fail2ban.log
+backend = auto
+action = %(action_)s
+protocol = all
+bantime = -1
+findtime = 30d
+maxretry = 2
+{% endif %}
+
+[sshd]
+enabled = true
+port = ssh
+logpath = %(sshd_log)s
+backend = %(sshd_backend)s
+
+{% if cockpit_fail2ban_enabled | bool %}
+[cockpit]
+enabled = true
+port = 9090
+filter = cockpit
+backend = systemd
+maxretry = 10
+findtime = 15m
+bantime = 1h
+
+[cockpit-recidive]
+enabled = true
+filter = recidive
+logpath = /var/log/fail2ban.log
+action = %(action_)s
+protocol = all
+bantime = -1
+findtime = 365d
+maxretry = 5
+{% endif %}
+
+[recidive]
+enabled = true
+filter = recidive
+logpath = /var/log/fail2ban.log
+action = %(action_)s
+protocol = all
+bantime = 7d
+findtime = 1d
+maxretry = 3

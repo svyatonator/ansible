@@ -1,0 +1,47 @@
+Да. Для нового клиента вам нужно сделать ровно две вещи:
+
+Вытащить UUID из его .amnezia.vpn
+Добавить этот UUID в массив clients в amnezia-xray-server.json, не трогая routing/outbounds
+Как определить UUID из .amnezia.vpn:
+
+python3 -c '
+import base64, zlib, json, sys
+s = sys.argv[1].strip()
+if s.startswith("vpn://"):
+    s = s[6:]
+raw = base64.urlsafe_b64decode(s + "=" * (-len(s) % 4))
+data = json.loads(zlib.decompress(raw[4:]))
+cfg = json.loads(data["containers"][0]["xray"]["last_config"])
+print(cfg["outbounds"][0]["settings"]["vnext"][0]["users"][0]["id"])
+' 'vpn://СЮДА_ВСТАВИТЬ_ВСЮ_СТРОКУ_ИЗ_КОНФИГА'
+
+Потом в amnezia-xray-server.json меняется только этот кусок:
+
+"clients": [
+  {
+    "flow": "xtls-rprx-vision",
+    "id": "UUID_OLD"
+  },
+  {
+    "flow": "xtls-rprx-vision",
+    "id": "UUID_NEW"
+  }
+]
+То есть новый клиент просто добавляется в список.
+
+После этого применяете:
+
+docker cp /root/amnezia-xray-server.json amnezia-xray:/opt/amnezia/xray/server.json
+docker restart amnezia-xray
+docker exec amnezia-xray sh -c 'xray -test -config /opt/amnezia/xray/server.json'
+
+
+  },
+  {
+    "flow": "xtls-rprx-vision",
+    "id": "1d5bc45e-419b-4cca-bf4f-464c686052d3"
+  },
+  {
+    "flow": "xtls-rprx-vision",
+    "id": "9a95a671-7cb1-4a04-8b40-8fa7efb0ae5a"
+  }

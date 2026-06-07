@@ -1,0 +1,1 @@
+{"nodes": [{"id": "ansible_group_vars_telegram_bot_alert_vault", "label": "Telegram Bot Alert Vault", "file_type": "code", "source_file": "group_vars/telegram-bot-alert_vault.yml"}], "edges": [], "hyperedges": []}

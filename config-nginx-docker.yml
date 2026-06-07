@@ -16,6 +16,12 @@
       - dp.volna.ovh
     headscale_backend_name: headscale
     headscale_backend_port: 8080
+    couchdb_domain: ob.volna.ovh
+    couchdb_certbot_cert_name: ob.volna.ovh
+    couchdb_certbot_domains:
+      - ob.volna.ovh
+    couchdb_backend_host: 100.64.0.4
+    couchdb_backend_port: 5984
 
   tasks:
     - name: Install certbot
@@ -83,14 +89,31 @@
         path: "/etc/letsencrypt/live/{{ headscale_certbot_cert_name }}/fullchain.pem"
       register: headscale_existing_cert
 
+    - name: Check if CouchDB certificate already exists
+      ansible.builtin.stat:
+        path: "/etc/letsencrypt/live/{{ couchdb_certbot_cert_name }}/fullchain.pem"
+      register: couchdb_existing_cert
+
     - name: Set TLS mode for Headscale nginx config
       ansible.builtin.set_fact:
         headscale_nginx_enable_tls: "{{ headscale_existing_cert.stat.exists | bool }}"
+
+    - name: Set TLS mode for CouchDB nginx config
+      ansible.builtin.set_fact:
+        couchdb_nginx_enable_tls: "{{ couchdb_existing_cert.stat.exists | bool }}"
 
     - name: Write nginx config for Headscale and DERP
       ansible.builtin.template:
         src: templates/nginx-docker-headscale-derp.conf.j2
         dest: "{{ nginx_docker_root }}/conf.d/headscale-derp.conf"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Write nginx config for CouchDB
+      ansible.builtin.template:
+        src: templates/nginx-docker-couchdb.conf.j2
+        dest: "{{ nginx_docker_root }}/conf.d/couchdb.conf"
         owner: root
         group: root
         mode: "0644"
@@ -135,10 +158,35 @@
       changed_when: true
       when: not headscale_existing_cert.stat.exists
 
+    - name: Issue initial certificate for CouchDB when missing
+      ansible.builtin.command:
+        argv:
+          - certbot
+          - certonly
+          - --webroot
+          - -w
+          - "{{ letsencrypt_webroot }}"
+          - -d
+          - "{{ couchdb_certbot_domains[0] }}"
+          - --cert-name
+          - "{{ couchdb_certbot_cert_name }}"
+          - --email
+          - "{{ certbot_email | default('') }}"
+          - --agree-tos
+          - --non-interactive
+      register: couchdb_cert_issue
+      changed_when: true
+      when: not couchdb_existing_cert.stat.exists
+
     - name: Check renewal config exists for Headscale certificate
       ansible.builtin.stat:
         path: "/etc/letsencrypt/renewal/{{ headscale_certbot_cert_name }}.conf"
       register: headscale_renewal_conf
+
+    - name: Check renewal config exists for CouchDB certificate
+      ansible.builtin.stat:
+        path: "/etc/letsencrypt/renewal/{{ couchdb_certbot_cert_name }}.conf"
+      register: couchdb_renewal_conf
 
     - name: Force Headscale renewal config to use webroot authenticator
       ansible.builtin.ini_file:
@@ -167,15 +215,55 @@
         mode: "0644"
       when: headscale_renewal_conf.stat.exists
 
+    - name: Force CouchDB renewal config to use webroot authenticator
+      ansible.builtin.ini_file:
+        path: "/etc/letsencrypt/renewal/{{ couchdb_certbot_cert_name }}.conf"
+        section: renewalparams
+        option: authenticator
+        value: webroot
+        mode: "0644"
+      when: couchdb_renewal_conf.stat.exists
+
+    - name: Remove installer from CouchDB renewal config
+      ansible.builtin.ini_file:
+        path: "/etc/letsencrypt/renewal/{{ couchdb_certbot_cert_name }}.conf"
+        section: renewalparams
+        option: installer
+        state: absent
+        mode: "0644"
+      when: couchdb_renewal_conf.stat.exists
+
+    - name: Set webroot path in CouchDB renewal config
+      ansible.builtin.ini_file:
+        path: "/etc/letsencrypt/renewal/{{ couchdb_certbot_cert_name }}.conf"
+        section: renewalparams
+        option: webroot_path
+        value: "{{ letsencrypt_webroot }}"
+        mode: "0644"
+      when: couchdb_renewal_conf.stat.exists
+
     - name: Enable TLS mode after initial certificate issuance
       ansible.builtin.set_fact:
         headscale_nginx_enable_tls: true
       when: headscale_cert_issue is defined and not (headscale_cert_issue.skipped | default(false))
 
+    - name: Enable CouchDB TLS mode after initial certificate issuance
+      ansible.builtin.set_fact:
+        couchdb_nginx_enable_tls: true
+      when: couchdb_cert_issue is defined and not (couchdb_cert_issue.skipped | default(false))
+
     - name: Rewrite nginx config with TLS
       ansible.builtin.template:
         src: templates/nginx-docker-headscale-derp.conf.j2
         dest: "{{ nginx_docker_root }}/conf.d/headscale-derp.conf"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Rewrite CouchDB nginx config with TLS
+      ansible.builtin.template:
+        src: templates/nginx-docker-couchdb.conf.j2
+        dest: "{{ nginx_docker_root }}/conf.d/couchdb.conf"
         owner: root
         group: root
         mode: "0644"
@@ -217,4 +305,6 @@
         msg:
           - "https://{{ headscale_domain }} is proxied to {{ headscale_backend_name }}:{{ headscale_backend_port }}"
           - "https://{{ derp_domain }} is proxied to {{ headscale_backend_name }}:{{ headscale_backend_port }}"
+          - "https://{{ couchdb_domain }} is proxied to {{ couchdb_backend_host }}:{{ couchdb_backend_port }}"
           - "Certificate name: {{ headscale_certbot_cert_name }}"
+          - "Certificate name: {{ couchdb_certbot_cert_name }}"

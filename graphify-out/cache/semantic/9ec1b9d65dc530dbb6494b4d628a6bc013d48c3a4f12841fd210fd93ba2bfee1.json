@@ -1,0 +1,1 @@
+{"nodes": [{"id": "ansible_setup_awg_client_playbook", "label": "AmneziaWG Host Client Setup", "file_type": "code", "source_file": "setup-awg-client.yml"}], "edges": [], "hyperedges": []}

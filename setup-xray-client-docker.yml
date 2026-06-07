@@ -1,0 +1,212 @@
+- name: Setup Xray client Docker scaffold on Ubuntu hosts
+  hosts: servers
+  gather_facts: true
+  become: true
+
+  vars_prompt:
+    - name: xray_client_local_amnezia_config_path
+      prompt: "Local path to .amnezia.vpn file to upload for reference (leave empty to skip)"
+      private: false
+
+  vars:
+    xray_client_parser_script: "{{ playbook_dir }}/scripts/parse-amnezia-vpn.py"
+    xray_client_root: /opt/xray-client
+    xray_client_container_name: xray-client
+    xray_client_image: teddysun/xray:latest
+    xray_client_socks_bind: 127.0.0.1
+    xray_client_socks_port: 1080
+    xray_client_dns_servers:
+      - 1.1.1.1
+      - 8.8.8.8
+    xray_client_upload_dir: "{{ xray_client_root }}/import"
+    xray_client_config_path: "{{ xray_client_root }}/config.json"
+    xray_client_compose_path: "{{ xray_client_root }}/docker-compose.yml"
+    xray_client_reference_config_path: >-
+      {{
+        xray_client_upload_dir + '/' +
+        (xray_client_local_amnezia_config_path | trim | basename)
+        if xray_client_local_amnezia_config_path | trim | length > 0
+        else ''
+      }}
+
+  pre_tasks:
+    - name: Check whether local .amnezia.vpn file exists
+      ansible.builtin.stat:
+        path: "{{ xray_client_local_amnezia_config_path | trim }}"
+      register: xray_client_local_config_stat
+      delegate_to: localhost
+      become: false
+      when: xray_client_local_amnezia_config_path | trim | length > 0
+      run_once: true
+
+    - name: Remember whether local .amnezia.vpn file is available
+      ansible.builtin.set_fact:
+        xray_client_config_available: >-
+          {{
+            xray_client_local_amnezia_config_path | trim | length > 0 and
+            xray_client_local_config_stat is defined and
+            xray_client_local_config_stat.stat.exists and
+            xray_client_local_config_stat.stat.isreg
+          }}
+
+    - name: Parse local .amnezia.vpn file
+      ansible.builtin.command:
+        argv:
+          - python3
+          - "{{ xray_client_parser_script }}"
+          - "{{ xray_client_local_amnezia_config_path | trim }}"
+      register: xray_client_parsed_config
+      changed_when: false
+      delegate_to: localhost
+      become: false
+      when: xray_client_config_available | bool
+      run_once: true
+
+    - name: Remember parsed Xray client config
+      ansible.builtin.set_fact:
+        xray_client_parsed_json: "{{ xray_client_parsed_config.stdout | from_json }}"
+      when: xray_client_config_available | bool
+
+    - name: Show parsed Xray client connection summary
+      ansible.builtin.debug:
+        msg:
+          - "Parsed Xray client target: {{ xray_client_parsed_json.address }}:{{ xray_client_parsed_json.port }}"
+          - "Parsed UUID: {{ xray_client_parsed_json.id }}"
+          - "Parsed Reality serverName: {{ xray_client_parsed_json.serverName }}"
+          - "Parsed Reality shortId: {{ xray_client_parsed_json.shortId }}"
+      when: xray_client_config_available | bool
+
+  tasks:
+    - name: Install Docker package
+      ansible.builtin.apt:
+        name:
+          - docker.io
+        state: present
+        update_cache: true
+
+    - name: Try to install Docker Compose plugin package
+      ansible.builtin.apt:
+        name: docker-compose-plugin
+        state: present
+      register: xray_client_compose_plugin_install
+      failed_when: false
+
+    - name: Try to install legacy docker-compose package
+      ansible.builtin.apt:
+        name: docker-compose
+        state: present
+      register: xray_client_compose_legacy_install
+      failed_when: false
+
+    - name: Ensure Docker is enabled and started
+      ansible.builtin.service:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Detect Docker Compose command
+      ansible.builtin.shell: |
+        if docker compose version >/dev/null 2>&1; then
+          echo "docker compose"
+        elif docker-compose version >/dev/null 2>&1; then
+          echo "docker-compose"
+        else
+          exit 1
+        fi
+      args:
+        executable: /bin/bash
+      register: xray_client_compose_detect
+      changed_when: false
+      failed_when: false
+
+    - name: Remember Docker Compose command
+      ansible.builtin.set_fact:
+        xray_client_compose_cmd: "{{ xray_client_compose_detect.stdout }}"
+
+    - name: Fail when no Docker Compose command is available
+      ansible.builtin.fail:
+        msg: >-
+          Neither 'docker compose' nor 'docker-compose' is available on the host.
+          Plugin install result={{ xray_client_compose_plugin_install.msg | default(xray_client_compose_plugin_install.stdout | default('n/a')) }};
+          legacy install result={{ xray_client_compose_legacy_install.msg | default(xray_client_compose_legacy_install.stdout | default('not attempted')) }}.
+      when: xray_client_compose_cmd | default('') | trim == ''
+
+    - name: Create Xray client directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - "{{ xray_client_root }}"
+        - "{{ xray_client_upload_dir }}"
+
+    - name: Upload reference .amnezia.vpn file
+      ansible.builtin.copy:
+        src: "{{ xray_client_local_amnezia_config_path | trim }}"
+        dest: "{{ xray_client_reference_config_path }}"
+        owner: root
+        group: root
+        mode: "0600"
+      when: xray_client_config_available | bool
+
+    - name: Write placeholder Xray client config
+      ansible.builtin.template:
+        src: templates/xray-client-config.json.j2
+        dest: "{{ xray_client_config_path }}"
+        owner: root
+        group: root
+        mode: "0600"
+
+    - name: Write Docker Compose file for Xray client
+      ansible.builtin.template:
+        src: templates/docker-compose-xray-client.yml.j2
+        dest: "{{ xray_client_compose_path }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Pull Xray client image
+      ansible.builtin.command:
+        cmd: "{{ xray_client_compose_cmd }} pull"
+        chdir: "{{ xray_client_root }}"
+      register: xray_client_pull
+      changed_when: "'Pulled' in xray_client_pull.stdout or 'Downloaded' in xray_client_pull.stdout or 'Pull complete' in xray_client_pull.stdout"
+
+    - name: Find pre-existing Xray client containers
+      ansible.builtin.command:
+        argv:
+          - docker
+          - ps
+          - -a
+          - --filter
+          - name=xray-client
+          - --format
+          - "{% raw %}{{.Names}}{% endraw %}"
+      register: xray_client_existing_containers
+      changed_when: false
+
+    - name: Remove pre-existing Xray client containers
+      ansible.builtin.command:
+        argv:
+          - docker
+          - rm
+          - -f
+          - "{{ item }}"
+      loop: "{{ xray_client_existing_containers.stdout_lines }}"
+      when: xray_client_existing_containers.stdout_lines | length > 0
+
+    - name: Ensure Xray client stack is up
+      ansible.builtin.command:
+        cmd: "{{ xray_client_compose_cmd }} up -d"
+        chdir: "{{ xray_client_root }}"
+
+    - name: Show next steps
+      ansible.builtin.debug:
+        msg:
+          - "Xray client scaffold is deployed to {{ xray_client_root }}"
+          - "Edit {{ xray_client_config_path }} with the real VLESS/Reality client parameters."
+          - "If uploaded, the reference file is stored at {{ xray_client_reference_config_path if xray_client_config_available | bool else '(not uploaded)' }}"
+          - "Restart after edits: cd {{ xray_client_root }} && {{ xray_client_compose_cmd }} up -d"
+          - "Test after edits: curl --socks5 {{ xray_client_socks_bind }}:{{ xray_client_socks_port }} https://ifconfig.me"

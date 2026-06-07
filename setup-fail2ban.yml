@@ -3,6 +3,10 @@
   gather_facts: true
   become: true
 
+  vars:
+    nginx_container_name: nginx
+    couchdb_domain: ob.volna.ovh
+
   tasks:
     - name: Install fail2ban
       ansible.builtin.apt:
@@ -16,12 +20,66 @@
         enabled: true
         state: started
 
+    - name: Check if docker nginx container is running
+      ansible.builtin.command:
+        argv:
+          - docker
+          - ps
+          - --filter
+          - "name=^/{{ nginx_container_name }}$"
+          - --format
+          - "{% raw %}{{.Names}}{% endraw %}"
+      register: nginx_running
+      failed_when: false
+      changed_when: false
+
+    - name: Get docker nginx log path
+      ansible.builtin.command:
+        argv:
+          - docker
+          - inspect
+          - "{{ nginx_container_name }}"
+          - --format
+          - "{% raw %}{{.LogPath}}{% endraw %}"
+      register: nginx_logpath
+      changed_when: false
+      when: nginx_running.stdout == nginx_container_name
+
+    - name: Set nginx fail2ban facts
+      ansible.builtin.set_fact:
+        nginx_fail2ban_enabled: "{{ nginx_running.stdout == nginx_container_name }}"
+        nginx_fail2ban_logpath: "{{ nginx_logpath.stdout | default('') }}"
+
+    - name: Create nginx CouchDB auth fail2ban filter
+      ansible.builtin.template:
+        src: templates/fail2ban-nginx-couchdb-auth.conf.j2
+        dest: /etc/fail2ban/filter.d/nginx-couchdb-auth.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart fail2ban
+      when: nginx_fail2ban_enabled | bool
+
+    - name: Create nginx CouchDB auth recidive fail2ban filter
+      ansible.builtin.template:
+        src: templates/fail2ban-nginx-couchdb-auth-recidive.conf.j2
+        dest: /etc/fail2ban/filter.d/nginx-couchdb-auth-recidive.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart fail2ban
+      when: nginx_fail2ban_enabled | bool
+
     - name: Check if cockpit is installed
       ansible.builtin.systemd:
         name: cockpit.socket
       register: cockpit_service
       failed_when: false
       changed_when: false
+
+    - name: Set cockpit fail2ban fact
+      ansible.builtin.set_fact:
+        cockpit_fail2ban_enabled: "{{ cockpit_service.status is defined and cockpit_service.status.LoadState == 'loaded' }}"
 
     - name: Create cockpit fail2ban filter
       ansible.builtin.copy:
@@ -38,114 +96,29 @@
       notify: Restart fail2ban
       when: cockpit_service.status is defined and cockpit_service.status.LoadState == "loaded"
 
-    - name: Create jail.local configuration (with cockpit)
-      ansible.builtin.copy:
+    - name: Write jail.local configuration
+      ansible.builtin.template:
+        src: templates/fail2ban-jail.local.j2
         dest: /etc/fail2ban/jail.local
-        content: |
-          [DEFAULT]
-          # Основные параметры блокировки
-          bantime = 1h
-          findtime = 15m
-          maxretry = 5
-          
-          # Игнорируемые IP (локальные сети)
-          ignoreip = 127.0.0.1/8 ::1
-          
-          # Отключаем email уведомления
-          destemail = root@localhost
-          sender = fail2ban@localhost
-          action = %(action_)s
-          
-          # Backend для мониторинга логов
-          backend = systemd
-          
-          [sshd]
-          enabled = true
-          port = ssh
-          logpath = %(sshd_log)s
-          backend = %(sshd_backend)s
-          
-          [cockpit]
-          enabled = true
-          port = 9090
-          filter = cockpit
-          backend = systemd
-          maxretry = 10
-          findtime = 15m
-          bantime = 1h
-          
-          [recidive]
-          enabled = true
-          filter = recidive
-          logpath = /var/log/fail2ban.log
-          action = %(action_)s
-          protocol = all
-          # Бан на 7 дней для рецидивистов
-          bantime = 7d
-          # 3 бана за 1 день = долгий бан
-          findtime = 1d
-          maxretry = 3
-          
-          [cockpit-recidive]
-          enabled = true
-          filter = recidive
-          logpath = /var/log/fail2ban.log
-          action = %(action_)s
-          protocol = all
-          # Перманентный бан для рецидивистов Cockpit
-          bantime = -1
-          # 5 банов = перманентный бан
-          findtime = 365d
-          maxretry = 5
         owner: root
         group: root
         mode: '0644'
       notify: Restart fail2ban
-      when: cockpit_service.status is defined and cockpit_service.status.LoadState == "loaded"
 
-    - name: Create jail.local configuration (without cockpit)
-      ansible.builtin.copy:
-        dest: /etc/fail2ban/jail.local
-        content: |
-          [DEFAULT]
-          # Основные параметры блокировки
-          bantime = 1h
-          findtime = 15m
-          maxretry = 5
-          
-          # Игнорируемые IP (локальные сети)
-          ignoreip = 127.0.0.1/8 ::1
-          
-          # Отключаем email уведомления
-          destemail = root@localhost
-          sender = fail2ban@localhost
-          action = %(action_)s
-          
-          # Backend для мониторинга логов
-          backend = systemd
-          
-          [sshd]
-          enabled = true
-          port = ssh
-          logpath = %(sshd_log)s
-          backend = %(sshd_backend)s
-          
-          [recidive]
-          enabled = true
-          filter = recidive
-          logpath = /var/log/fail2ban.log
-          action = %(action_)s
-          protocol = all
-          # Бан на 7 дней для рецидивистов
-          bantime = 7d
-          # 3 бана за 1 день = долгий бан
-          findtime = 1d
-          maxretry = 3
-        owner: root
-        group: root
-        mode: '0644'
-      notify: Restart fail2ban
-      when: cockpit_service.status is not defined or cockpit_service.status.LoadState != "loaded"
+    - name: Flush fail2ban handlers
+      ansible.builtin.meta: flush_handlers
+
+    - name: Ensure fail2ban service is running after config update
+      ansible.builtin.service:
+        name: fail2ban
+        state: started
+        enabled: true
+
+    - name: Wait for fail2ban socket
+      ansible.builtin.wait_for:
+        path: /var/run/fail2ban/fail2ban.sock
+        state: present
+        timeout: 30
 
     - name: Verify fail2ban configuration
       ansible.builtin.command: fail2ban-client -t

@@ -1,0 +1,16 @@
+services:
+  couchdb:
+    image: "{{ couchdb_image }}"
+    container_name: "{{ couchdb_container_name }}"
+    restart: unless-stopped
+
+    ports:
+      - "{{ couchdb_bind_address }}:{{ couchdb_port }}:5984"
+
+    environment:
+      COUCHDB_USER: "{{ couchdb_admin_user }}"
+      COUCHDB_PASSWORD: "{{ couchdb_admin_password }}"
+
+    volumes:
+      - "{{ couchdb_data_dir }}:/opt/couchdb/data"
+      - "{{ couchdb_local_config_dir }}:/opt/couchdb/etc/local.d"

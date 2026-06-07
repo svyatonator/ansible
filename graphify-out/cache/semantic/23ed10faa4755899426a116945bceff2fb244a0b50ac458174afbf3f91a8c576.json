@@ -1,0 +1,1 @@
+{"nodes": [{"id": "ansible_setup_all_settings_volna_ovh_playbook", "label": "Nginx Volna.ovh Static Sites Setup", "file_type": "code", "source_file": "setup-all settings-volna-ovh.yml"}], "edges": [], "hyperedges": []}

@@ -1,0 +1,1 @@
+{"nodes": [{"id": "ansible_context_index_document", "label": "Repository Context Index", "file_type": "document", "source_file": "CONTEXT_INDEX.md", "rationale": "Overview of host setup, user management, and service deployment."}], "edges": [], "hyperedges": []}

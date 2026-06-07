@@ -9,6 +9,8 @@
     mtproto_port: 8443
     mtproto_secret: ""
     mtproto_secret_count: 2
+    mtproto_fake_tls_domain: volna.ovh
+    mtproto_public_host: "{{ mtproto_fake_tls_domain }}"
     # Tag version from https://hub.docker.com/r/telegrammessenger/proxy/tags
     mtproto_image_tag: latest
 
@@ -42,15 +44,29 @@
         group: root
         mode: "0755"
 
-    - name: Generate random secret if not provided
-      ansible.builtin.command: openssl rand -hex 16
-      register: generated_secret
-      changed_when: false
+    - name: Validate Fake TLS domain length
+      ansible.builtin.assert:
+        that:
+          - mtproto_fake_tls_domain | length <= 15
+        fail_msg: "mtproto_fake_tls_domain must be 15 characters or shorter for current Fake TLS secret generation."
       when: mtproto_secret | length == 0
 
-    - name: Set generated secret
+    - name: Generate Fake TLS secret from domain if not provided
+      ansible.builtin.shell: |
+        set -eu
+        domain_hex="$(printf '%s' '{{ mtproto_fake_tls_domain | lower }}' | od -An -tx1 | tr -d ' \n')"
+        suffix_len=$((30 - ${#domain_hex}))
+        random_hex="$(openssl rand -hex 16 | cut -c1-"$suffix_len")"
+        printf 'ee%s%s\n' "$domain_hex" "$random_hex"
+      register: generated_mtproto_secret
+      changed_when: false
+      args:
+        executable: /bin/bash
+      when: mtproto_secret | length == 0
+
+    - name: Set generated Fake TLS secret
       ansible.builtin.set_fact:
-        mtproto_secret: "{{ generated_secret.stdout }}"
+        mtproto_secret: "{{ generated_mtproto_secret.stdout }}"
       when: mtproto_secret | length == 0
 
     - name: Check if MTProto proxy container exists
@@ -99,15 +115,15 @@
         content: |
           MTProto Proxy Configuration
           ===========================
-          Server: {{ ansible_default_ipv4.address | default(ansible_host) }}
+          Server: {{ mtproto_public_host }}
           Port: {{ mtproto_port }}
           Secret: {{ mtproto_secret }}
           
           Connection link (tg://proxy):
-          tg://proxy?server={{ ansible_default_ipv4.address | default(ansible_host) }}&port={{ mtproto_port }}&secret={{ mtproto_secret }}
+          tg://proxy?server={{ mtproto_public_host }}&port={{ mtproto_port }}&secret={{ mtproto_secret }}
           
           Connection link (https):
-          https://t.me/proxy?server={{ ansible_default_ipv4.address | default(ansible_host) }}&port={{ mtproto_port }}&secret={{ mtproto_secret }}
+          https://t.me/proxy?server={{ mtproto_public_host }}&port={{ mtproto_port }}&secret={{ mtproto_secret }}
           
           Generated: {{ ansible_date_time.iso8601 }}
         dest: "{{ mtproto_docker_root }}/proxy-info.txt"

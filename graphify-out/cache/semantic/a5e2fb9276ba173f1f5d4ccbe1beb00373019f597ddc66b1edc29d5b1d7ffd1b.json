@@ -1,0 +1,1 @@
+{"nodes": [{"id": "ansible_setup_mtproto_docker_playbook", "label": "MTProto Telegram Proxy", "file_type": "code", "source_file": "setup-mtproto-docker.yml"}], "edges": [], "hyperedges": []}

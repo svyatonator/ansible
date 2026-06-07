@@ -22,6 +22,7 @@
       amd64: x86_64
       aarch64: aarch64
       arm64: aarch64
+    certbot_run_dry_check: false
 
   tasks:
     - name: Install Docker and certbot
@@ -386,6 +387,9 @@
           - --non-interactive
       register: certbot_config
       changed_when: true
+      retries: 5
+      delay: 15
+      until: certbot_config.rc == 0
       when:
         - certbot_renewal_conf.stat.exists
         - certbot_existing_cert.stat.exists
@@ -399,13 +403,15 @@
         cmd: certbot renew --dry-run
       register: certbot_dry_run
       changed_when: false
+      when: certbot_run_dry_check | bool
 
     - name: Print certbot dry-run result
       ansible.builtin.debug:
         msg: "{{ certbot_dry_run.stdout_lines }}"
+      when: certbot_run_dry_check | bool
 
   handlers:
     - name: Restart nginx docker stack
       ansible.builtin.command:
-        cmd: "{{ docker_compose_cmd }} up -d"
+        cmd: "{{ docker_compose_cmd }} up -d --force-recreate nginx"
         chdir: "{{ nginx_docker_root }}"

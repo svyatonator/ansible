@@ -1,0 +1,545 @@
+{
+  "nodes": [
+    {
+      "id": "gemini_settings_config",
+      "label": "Gemini Settings",
+      "file_type": "code",
+      "source_file": ".gemini/settings.json"
+    },
+    {
+      "id": "scripts_import_awg_config_script",
+      "label": "AmneziaWG Config Importer",
+      "file_type": "code",
+      "source_file": "scripts/import-awg-config.py"
+    },
+    {
+      "id": "scripts_openclaw_lxc_fixed_backup_script",
+      "label": "OpenClaw LXC Fixed Backup Script",
+      "file_type": "code",
+      "source_file": "scripts/openclaw-lxc-fixed-backup.sh"
+    },
+    {
+      "id": "scripts_openclaw_lxc_fixed_restore_script",
+      "label": "OpenClaw LXC Fixed Restore Script",
+      "file_type": "code",
+      "source_file": "scripts/openclaw-lxc-fixed-restore.sh"
+    },
+    {
+      "id": "scripts_parse_amnezia_vpn_script",
+      "label": "Amnezia VPN Export Parser",
+      "file_type": "code",
+      "source_file": "scripts/parse-amnezia-vpn.py"
+    },
+    {
+      "id": "ansible_ai_index_document",
+      "label": "AI Agent Index",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "rationale": "Optimized index for AI agents to quickly locate variables, files, and configurations."
+    },
+    {
+      "id": "ansible_context_index_document",
+      "label": "Repository Context Index",
+      "file_type": "document",
+      "source_file": "CONTEXT_INDEX.md",
+      "rationale": "Overview of host setup, user management, and service deployment."
+    },
+    {
+      "id": "ansible_gemini_document",
+      "label": "Gemini Knowledge Graph Rules",
+      "file_type": "document",
+      "source_file": "GEMINI.md",
+      "rationale": "Rules for using the graphify-powered knowledge graph for codebase navigation."
+    },
+    {
+      "id": "ansible_openclaw_operations_document",
+      "label": "OpenClaw Operations Manual",
+      "file_type": "document",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "rationale": "Operations for OpenClaw (paths, backup/restore, SSH-tunnel)."
+    },
+    {
+      "id": "ansible_add_new_sudouser_playbook",
+      "label": "Add New Sudo User Playbook",
+      "file_type": "code",
+      "source_file": "add-new-sudouser.yml"
+    },
+    {
+      "id": "ansible_bootstrap_1_ssh_key_to_root_add_new_sudouser_playbook",
+      "label": "Bootstrap: Root SSH Key to New Sudo User",
+      "file_type": "code",
+      "source_file": "bootstrap-1-ssh-key-to-root-add-new-sudouser.yml"
+    },
+    {
+      "id": "ansible_bootstrap_2_remove_root_access_playbook",
+      "label": "Bootstrap: Remove Root Access",
+      "file_type": "code",
+      "source_file": "bootstrap-2-remove-root-access.yml"
+    },
+    {
+      "id": "ansible_cleanup_awg_client_playbook",
+      "label": "Cleanup AmneziaWG Client",
+      "file_type": "code",
+      "source_file": "cleanup-awg-client.yml"
+    },
+    {
+      "id": "ansible_cleanup_openclaw_docker_backup_playbook",
+      "label": "Cleanup OpenClaw Docker Stack",
+      "file_type": "code",
+      "source_file": "cleanup-openclaw-docker-backup.yml"
+    },
+    {
+      "id": "ansible_config_nginx_docker_playbook",
+      "label": "Configure Nginx for Headscale/DERP",
+      "file_type": "code",
+      "source_file": "config-nginx-docker.yml"
+    },
+    {
+      "id": "group_vars_all_vars",
+      "label": "Global Variables (All Groups)",
+      "file_type": "code",
+      "source_file": "group_vars/all.yml"
+    },
+    {
+      "id": "group_vars_bootstrap_vars",
+      "label": "Bootstrap Group Variables",
+      "file_type": "code",
+      "source_file": "group_vars/bootstrap.yml"
+    },
+    {
+      "id": "group_vars_openclaw_vars",
+      "label": "OpenClaw Public Variables",
+      "file_type": "code",
+      "source_file": "group_vars/openclaw.yml"
+    },
+    {
+      "id": "group_vars_openclaw_vault_vars",
+      "label": "OpenClaw Secret Variables (Vault)",
+      "file_type": "code",
+      "source_file": "group_vars/openclaw_vault.yml"
+    },
+    {
+      "id": "group_vars_ostrov_vars",
+      "label": "Ostrov Group Variables",
+      "file_type": "code",
+      "source_file": "group_vars/ostrov.yml"
+    },
+    {
+      "id": "group_vars_ostrov_lxc_vars",
+      "label": "Ostrov LXC Group Variables",
+      "file_type": "code",
+      "source_file": "group_vars/ostrov_lxc.yml"
+    },
+    {
+      "id": "group_vars_servers_vars",
+      "label": "Production Server Variables",
+      "file_type": "code",
+      "source_file": "group_vars/servers.yml"
+    },
+    {
+      "id": "ansible_ostrov_doc",
+      "label": "Ostrov Machine Documentation",
+      "file_type": "document",
+      "source_file": "ostrov.md"
+    },
+    {
+      "id": "ansible_setup_all_settings_volna_ovh_playbook",
+      "label": "Nginx Volna.ovh Static Sites Setup",
+      "file_type": "code",
+      "source_file": "setup-all settings-volna-ovh.yml"
+    },
+    {
+      "id": "ansible_setup_auditd_playbook",
+      "label": "Auditd Command Logging Setup",
+      "file_type": "code",
+      "source_file": "setup-auditd.yml"
+    },
+    {
+      "id": "ansible_setup_awg_client_lxc_playbook",
+      "label": "AmneziaWG LXC Client Setup",
+      "file_type": "code",
+      "source_file": "setup-awg-client-lxc.yml"
+    },
+    {
+      "id": "ansible_setup_awg_client_playbook",
+      "label": "AmneziaWG Host Client Setup",
+      "file_type": "code",
+      "source_file": "setup-awg-client.yml"
+    },
+    {
+      "id": "ansible_setup_cockpit_playbook",
+      "label": "Cockpit Web Console with 2FA",
+      "file_type": "code",
+      "source_file": "setup-cockpit.yml"
+    },
+    {
+      "id": "ansible_setup_couchdb_ostrov_playbook",
+      "label": "CouchDB for Obsidian LiveSync",
+      "file_type": "code",
+      "source_file": "setup-couchdb-ostrov.yml"
+    },
+    {
+      "id": "ansible_setup_derper_playbook",
+      "label": "Tailscale DERP Relay Setup",
+      "file_type": "code",
+      "source_file": "setup-derper.yml"
+    },
+    {
+      "id": "ansible_setup_fail2ban_playbook",
+      "label": "Fail2ban Security Hardening",
+      "file_type": "code",
+      "source_file": "setup-fail2ban.yml"
+    },
+    {
+      "id": "ansible_setup_headscale_derp_docker_playbook",
+      "label": "Headscale with Embedded DERP",
+      "file_type": "code",
+      "source_file": "setup-headscale-derp-docker.yml"
+    },
+    {
+      "id": "ansible_setup_istall_nginx_playbook",
+      "label": "Nginx and Certbot Basic Install",
+      "file_type": "code",
+      "source_file": "setup-istall-nginx.yml"
+    },
+    {
+      "id": "ansible_setup_lxc_ostrov_playbook",
+      "label": "Ostrov LXC Provisioning with Reverse SSH",
+      "file_type": "code",
+      "source_file": "setup-lxc-ostrov.yml"
+    },
+    {
+      "id": "ansible_setup_mtproto_docker_playbook",
+      "label": "MTProto Telegram Proxy",
+      "file_type": "code",
+      "source_file": "setup-mtproto-docker.yml"
+    },
+    {
+      "id": "ansible_setup_nginx_docker_volna_ovh_playbook",
+      "label": "Nginx Docker Static Sites",
+      "file_type": "code",
+      "source_file": "setup-nginx-docker-volna-ovh.yml"
+    },
+    {
+      "id": "ansible_setup_openclaw_docker_playbook",
+      "label": "OpenClaw AI Docker Deployment",
+      "file_type": "code",
+      "source_file": "setup-openclaw-docker.yml"
+    },
+    {
+      "id": "ansible_setup_openclaw_lxc_fixed_backup_playbook",
+      "label": "OpenClaw LXC Fixed Backup Policy",
+      "file_type": "code",
+      "source_file": "setup-openclaw-lxc-fixed-backup.yml"
+    },
+    {
+      "id": "ansible_setup_openclaw_lxc_foundry_plugin_playbook",
+      "label": "OpenClaw Foundry Plugin Install",
+      "file_type": "code",
+      "source_file": "setup-openclaw-lxc-foundry-plugin.yml"
+    },
+    {
+      "id": "ansible_setup_openclaw_lxc_playbook",
+      "label": "OpenClaw AI LXC Deployment",
+      "file_type": "code",
+      "source_file": "setup-openclaw-lxc.yml"
+    },
+    {
+      "id": "ansible_setup_ssh_login_telegram_alert_playbook",
+      "label": "SSH Login Telegram Notifier",
+      "file_type": "code",
+      "source_file": "setup-ssh-login-telegram-alert.yml"
+    },
+    {
+      "id": "ansible_setup_tailscale_client_playbook",
+      "label": "Tailscale Mesh VPN Client",
+      "file_type": "code",
+      "source_file": "setup-tailscale-client.yml"
+    },
+    {
+      "id": "ansible_setup_xray_client_docker_playbook",
+      "label": "Xray/VLESS Client Scaffolding",
+      "file_type": "code",
+      "source_file": "setup-xray-client-docker.yml"
+    },
+    {
+      "id": "ansible_group_vars_telegram_bot_alert_vault",
+      "label": "Telegram Bot Alert Vault",
+      "file_type": "code",
+      "source_file": "group_vars/telegram-bot-alert_vault.yml"
+    },
+    {
+      "id": "ansible_concept_reverse_ssh_tunnel",
+      "label": "Reverse SSH Tunneling Mechanism",
+      "file_type": "concept",
+      "source_file": "ostrov.md",
+      "rationale": "Enables remote access to machines behind multiple NATs by initiating an outbound connection to a public relay (priboi) which forwards incoming traffic back to the source."
+    },
+    {
+      "id": "ansible_concept_openclaw_orchestration",
+      "label": "OpenClaw Lifecycle Management",
+      "file_type": "concept",
+      "source_file": "setup-openclaw-lxc.yml",
+      "rationale": "Supports both Docker and LXC deployment patterns for the OpenClaw AI framework, including automated backups and plugin management."
+    }
+  ],
+  "edges": [
+    {
+      "source": "scripts_import_awg_config_script",
+      "target": "group_vars_ostrov_vars",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/import-awg-config.py"
+    },
+    {
+      "source": "scripts_openclaw_lxc_fixed_backup_script",
+      "target": "scripts_openclaw_lxc_fixed_restore_script",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "scripts/openclaw-lxc-fixed-backup.sh"
+    },
+    {
+      "source": "ansible_ai_index_document",
+      "target": "group_vars_all_vars",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AI_INDEX.md"
+    },
+    {
+      "source": "ansible_ai_index_document",
+      "target": "ansible_add_new_sudouser_playbook",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AI_INDEX.md"
+    },
+    {
+      "source": "ansible_openclaw_operations_document",
+      "target": "scripts_openclaw_lxc_fixed_backup_script",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "OPENCLAW_OPERATIONS.md"
+    },
+    {
+      "source": "ansible_openclaw_operations_document",
+      "target": "scripts_openclaw_lxc_fixed_restore_script",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "OPENCLAW_OPERATIONS.md"
+    },
+    {
+      "source": "ansible_bootstrap_1_ssh_key_to_root_add_new_sudouser_playbook",
+      "target": "ansible_bootstrap_2_remove_root_access_playbook",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "bootstrap-1-ssh-key-to-root-add-new-sudouser.yml"
+    },
+    {
+      "source": "ansible_bootstrap_1_ssh_key_to_root_add_new_sudouser_playbook",
+      "target": "group_vars_all_vars",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "bootstrap-1-ssh-key-to-root-add-new-sudouser.yml"
+    },
+    {
+      "source": "ansible_bootstrap_2_remove_root_access_playbook",
+      "target": "group_vars_bootstrap_vars",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "bootstrap-2-remove-root-access.yml"
+    },
+    {
+      "source": "ansible_config_nginx_docker_playbook",
+      "target": "group_vars_servers_vars",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "config-nginx-docker.yml"
+    },
+    {
+      "source": "group_vars_ostrov_vars",
+      "target": "group_vars_ostrov_lxc_vars",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "group_vars/ostrov.yml"
+    },
+    {
+      "source": "ansible_ai_index_document",
+      "target": "ansible_context_index_document",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "AI_INDEX.md"
+    },
+    {
+      "source": "ansible_ostrov_doc",
+      "target": "ansible_concept_reverse_ssh_tunnel",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "ostrov.md"
+    },
+    {
+      "source": "ansible_setup_lxc_ostrov_playbook",
+      "target": "ansible_concept_reverse_ssh_tunnel",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "setup-lxc-ostrov.yml"
+    },
+    {
+      "source": "ansible_setup_couchdb_ostrov_playbook",
+      "target": "ansible_ostrov_doc",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "setup-couchdb-ostrov.yml"
+    },
+    {
+      "source": "ansible_setup_openclaw_lxc_foundry_plugin_playbook",
+      "target": "ansible_setup_openclaw_lxc_playbook",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "setup-openclaw-lxc-foundry-plugin.yml"
+    },
+    {
+      "source": "ansible_setup_openclaw_lxc_fixed_backup_playbook",
+      "target": "ansible_setup_openclaw_lxc_playbook",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "setup-openclaw-lxc-fixed-backup.yml"
+    },
+    {
+      "source": "ansible_setup_tailscale_client_playbook",
+      "target": "ansible_setup_headscale_derp_docker_playbook",
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "setup-tailscale-client.yml"
+    },
+    {
+      "source": "ansible_setup_fail2ban_playbook",
+      "target": "ansible_setup_cockpit_playbook",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "setup-fail2ban.yml"
+    },
+    {
+      "source": "ansible_setup_fail2ban_playbook",
+      "target": "ansible_setup_couchdb_ostrov_playbook",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "setup-fail2ban.yml"
+    },
+    {
+      "source": "ansible_setup_awg_client_lxc_playbook",
+      "target": "ansible_setup_awg_client_playbook",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "setup-awg-client-lxc.yml"
+    },
+    {
+      "source": "ansible_setup_nginx_docker_volna_ovh_playbook",
+      "target": "ansible_setup_all_settings_volna_ovh_playbook",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "setup-nginx-docker-volna-ovh.yml"
+    },
+    {
+      "source": "ansible_setup_ssh_login_telegram_alert_playbook",
+      "target": "ansible_group_vars_telegram_bot_alert_vault",
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "setup-ssh-login-telegram-alert.yml"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "openclaw_lxc_backup_mechanism",
+      "label": "OpenClaw LXC Fixed Backup Mechanism",
+      "nodes": [
+        "scripts_openclaw_lxc_fixed_backup_script",
+        "scripts_openclaw_lxc_fixed_restore_script",
+        "ansible_openclaw_operations_document"
+      ],
+      "relation": "form",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "OPENCLAW_OPERATIONS.md"
+    },
+    {
+      "id": "server_bootstrap_flow",
+      "label": "Initial Server Bootstrap Workflow",
+      "nodes": [
+        "ansible_bootstrap_1_ssh_key_to_root_add_new_sudouser_playbook",
+        "ansible_bootstrap_2_remove_root_access_playbook",
+        "group_vars_bootstrap_vars"
+      ],
+      "relation": "implement",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "bootstrap-1-ssh-key-to-root-add-new-sudouser.yml"
+    },
+    {
+      "id": "ansible_openclaw_ecosystem",
+      "label": "OpenClaw Deployment & Maintenance",
+      "nodes": [
+        "ansible_setup_openclaw_docker_playbook",
+        "ansible_setup_openclaw_lxc_playbook",
+        "ansible_setup_openclaw_lxc_fixed_backup_playbook",
+        "ansible_setup_openclaw_lxc_foundry_plugin_playbook"
+      ],
+      "relation": "implement",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "setup-openclaw-lxc.yml"
+    },
+    {
+      "id": "ansible_secure_tunneling_stack",
+      "label": "Secure Tunneling & VPN Infrastructure",
+      "nodes": [
+        "ansible_setup_awg_client_playbook",
+        "ansible_setup_tailscale_client_playbook",
+        "ansible_setup_xray_client_docker_playbook",
+        "ansible_setup_mtproto_docker_playbook",
+        "ansible_setup_derper_playbook",
+        "ansible_setup_headscale_derp_docker_playbook"
+      ],
+      "relation": "form",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "setup-headscale-derp-docker.yml"
+    },
+    {
+      "id": "ansible_ostrov_access_topology",
+      "label": "Ostrov Connectivity Topology",
+      "nodes": [
+        "ansible_ostrov_doc",
+        "ansible_setup_lxc_ostrov_playbook",
+        "ansible_concept_reverse_ssh_tunnel"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "ostrov.md"
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

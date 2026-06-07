@@ -1,0 +1,432 @@
+{
+  "scripts/import-awg-config.py": {
+    "mtime": 1773769755.8558578,
+    "ast_hash": "cccfca6682a3d421fe5611fa0bbe7b25",
+    "semantic_hash": ""
+  },
+  "scripts/openclaw-lxc-fixed-backup.sh": {
+    "mtime": 1771850438.5639915,
+    "ast_hash": "17dd3fe6c33f637e05c1528bc29a52b6",
+    "semantic_hash": ""
+  },
+  "scripts/openclaw-lxc-fixed-restore.sh": {
+    "mtime": 1771850438.5679727,
+    "ast_hash": "dc5bad9bda24947157f1ed8bc5839258",
+    "semantic_hash": ""
+  },
+  "scripts/parse-amnezia-vpn.py": {
+    "mtime": 1775387894.4559538,
+    "ast_hash": "47177c4bf67f6d611103ec2398be3b29",
+    "semantic_hash": ""
+  },
+  "AI_INDEX.md": {
+    "mtime": 1771975069.2261665,
+    "ast_hash": "cfffa031358d42dee256fdaaa626886c",
+    "semantic_hash": ""
+  },
+  "CONTEXT_INDEX.md": {
+    "mtime": 1771850438.5569727,
+    "ast_hash": "5cbd2f49b5d65b7e42f2d68443b7633a",
+    "semantic_hash": ""
+  },
+  "OPENCLAW_OPERATIONS.md": {
+    "mtime": 1771850438.5569727,
+    "ast_hash": "ad39a9545436cdd00793362222562c73",
+    "semantic_hash": ""
+  },
+  "add-new-sudouser.yml": {
+    "mtime": 1771850438.5579567,
+    "ast_hash": "c989298bebb3552a141e7cbd60b9694e",
+    "semantic_hash": ""
+  },
+  "bootstrap-1-ssh-key-to-root-add-new-sudouser.yml": {
+    "mtime": 1773426752.7029815,
+    "ast_hash": "e4ac34ce0619ce0ef00d5b3ef9280733",
+    "semantic_hash": ""
+  },
+  "bootstrap-2-remove-root-access.yml": {
+    "mtime": 1776268666.8579853,
+    "ast_hash": "4baa0772593108a91bdfb6ded3349740",
+    "semantic_hash": ""
+  },
+  "cleanup-awg-client.yml": {
+    "mtime": 1773864687.9839435,
+    "ast_hash": "e3421d67f060c9e2769c802eb596f226",
+    "semantic_hash": ""
+  },
+  "cleanup-openclaw-docker-backup.yml": {
+    "mtime": 1771850438.5607772,
+    "ast_hash": "f3c44e0cfe63c3915dd24a48ef8121d3",
+    "semantic_hash": ""
+  },
+  "config-nginx-docker.yml": {
+    "mtime": 1774792477.8019562,
+    "ast_hash": "7df92cdb75d95cc37c1e0a9a6f3ce7c9",
+    "semantic_hash": ""
+  },
+  "group_vars/all.yml": {
+    "mtime": 1774375404.728946,
+    "ast_hash": "9c218b73e6a39ea1f14308cc169d5a5f",
+    "semantic_hash": ""
+  },
+  "group_vars/bootstrap.yml": {
+    "mtime": 1771850438.5619726,
+    "ast_hash": "592fc7c5a6c7b387e53b22a2c1e6ebef",
+    "semantic_hash": ""
+  },
+  "group_vars/openclaw.yml": {
+    "mtime": 1771850438.562679,
+    "ast_hash": "53af0f584a1aeda13a88daeabdfd2c57",
+    "semantic_hash": ""
+  },
+  "group_vars/openclaw_vault.yml": {
+    "mtime": 1771850438.562833,
+    "ast_hash": "39be8d0eac94e267232cbb0f689ca224",
+    "semantic_hash": ""
+  },
+  "group_vars/ostrov.yml": {
+    "mtime": 1773767225.859948,
+    "ast_hash": "63c5d9ae36f098ac55e7673bd1a338b6",
+    "semantic_hash": ""
+  },
+  "group_vars/ostrov_lxc.yml": {
+    "mtime": 1773951845.1774938,
+    "ast_hash": "eac7b12b40712c64d5d26de89358145f",
+    "semantic_hash": ""
+  },
+  "group_vars/servers.yml": {
+    "mtime": 1771976914.35035,
+    "ast_hash": "3f0c3edcb6ff3dca109314cb89a89cf7",
+    "semantic_hash": ""
+  },
+  "group_vars/telegram-bot-alert_vault.yml": {
+    "mtime": 1771850438.5632215,
+    "ast_hash": "e635d7288f23258281c8bcde26fcc1ec",
+    "semantic_hash": ""
+  },
+  "ostrov.md": {
+    "mtime": 1773788473.6158783,
+    "ast_hash": "2ad0b10575dfcf09c1bea339e0a13c36",
+    "semantic_hash": ""
+  },
+  "setup-all settings-volna-ovh.yml": {
+    "mtime": 1771850438.5679727,
+    "ast_hash": "4469e220ea5acc0c1569a8bad5be2ee0",
+    "semantic_hash": ""
+  },
+  "setup-auditd.yml": {
+    "mtime": 1771850438.5679727,
+    "ast_hash": "d514116d1b75885470b973a8a658cda9",
+    "semantic_hash": ""
+  },
+  "setup-awg-client-lxc.yml": {
+    "mtime": 1773951582.0265033,
+    "ast_hash": "d4de7afc6747568b9af80ef40e225ecb",
+    "semantic_hash": ""
+  },
+  "setup-awg-client.yml": {
+    "mtime": 1773787257.8879216,
+    "ast_hash": "5196ebf855136e43f0aa5232bb88ac1d",
+    "semantic_hash": ""
+  },
+  "setup-cockpit.yml": {
+    "mtime": 1771850438.5692174,
+    "ast_hash": "97dbff8cfb682018829a78a5e5e48ffd",
+    "semantic_hash": ""
+  },
+  "setup-couchdb-ostrov.yml": {
+    "mtime": 1774811223.6379712,
+    "ast_hash": "9a88de3edacb59c2aac0e04c43961de2",
+    "semantic_hash": ""
+  },
+  "setup-derper.yml": {
+    "mtime": 1774710703.8886633,
+    "ast_hash": "d4356127286c72f77fcbcc7ab534bdbb",
+    "semantic_hash": ""
+  },
+  "setup-fail2ban.yml": {
+    "mtime": 1774834423.6617825,
+    "ast_hash": "7bb5fbdf36914b07fbf623cec1af9b96",
+    "semantic_hash": ""
+  },
+  "setup-headscale-derp-docker.yml": {
+    "mtime": 1774710849.934658,
+    "ast_hash": "11ae5abcc9358b14c6c45cb7e6efafc4",
+    "semantic_hash": ""
+  },
+  "setup-istall-nginx.yml": {
+    "mtime": 1771850438.5697887,
+    "ast_hash": "7eceb1757348d8f25f25a35e424e984f",
+    "semantic_hash": ""
+  },
+  "setup-lxc-ostrov.yml": {
+    "mtime": 1773950358.0245469,
+    "ast_hash": "67f1bc528acaa2dc311832405dfe557b",
+    "semantic_hash": ""
+  },
+  "setup-mtproto-docker.yml": {
+    "mtime": 1774984944.5129676,
+    "ast_hash": "8f1a3da8abbb0ef79a3629427b57efb1",
+    "semantic_hash": ""
+  },
+  "setup-nginx-docker-volna-ovh.yml": {
+    "mtime": 1774833797.157791,
+    "ast_hash": "30fe4ad2dda87cf36c24c071ca1b872f",
+    "semantic_hash": ""
+  },
+  "setup-openclaw-docker.yml": {
+    "mtime": 1771850438.5700014,
+    "ast_hash": "c2ad742156bc10ec3afe8c271c06dca0",
+    "semantic_hash": ""
+  },
+  "setup-openclaw-lxc-fixed-backup.yml": {
+    "mtime": 1771850438.5705664,
+    "ast_hash": "0dedda57ba677b42e936f7dfe698243c",
+    "semantic_hash": ""
+  },
+  "setup-openclaw-lxc-foundry-plugin.yml": {
+    "mtime": 1771850438.5707889,
+    "ast_hash": "4a0054aa8385314a7452ce3f75829eba",
+    "semantic_hash": ""
+  },
+  "setup-openclaw-lxc.yml": {
+    "mtime": 1771850438.5729725,
+    "ast_hash": "25657f4bbab70a5e1bf52a0cf1be20ad",
+    "semantic_hash": ""
+  },
+  "setup-ssh-login-telegram-alert.yml": {
+    "mtime": 1773689676.2949457,
+    "ast_hash": "d1bd6bb96248535faca454ccbdb30c1a",
+    "semantic_hash": ""
+  },
+  "setup-tailscale-client.yml": {
+    "mtime": 1774625733.6719751,
+    "ast_hash": "a914863b6f510374e4a1489ee3663cd3",
+    "semantic_hash": ""
+  },
+  "setup-xray-client-docker.yml": {
+    "mtime": 1776276379.397919,
+    "ast_hash": "abeb4723ac5674fa432a0786828ee80b",
+    "semantic_hash": ""
+  },
+  "/home/slava/code/ansible/.gemini/settings.json": {
+    "mtime": 1780836335.3234906,
+    "ast_hash": "f080aabf772e803c9e24b9ad0acbf2b6",
+    "semantic_hash": "f080aabf772e803c9e24b9ad0acbf2b6"
+  },
+  "/home/slava/code/ansible/scripts/import-awg-config.py": {
+    "mtime": 1773769755.8558578,
+    "ast_hash": "cccfca6682a3d421fe5611fa0bbe7b25",
+    "semantic_hash": "cccfca6682a3d421fe5611fa0bbe7b25"
+  },
+  "/home/slava/code/ansible/scripts/openclaw-lxc-fixed-backup.sh": {
+    "mtime": 1771850438.5639915,
+    "ast_hash": "17dd3fe6c33f637e05c1528bc29a52b6",
+    "semantic_hash": "17dd3fe6c33f637e05c1528bc29a52b6"
+  },
+  "/home/slava/code/ansible/scripts/openclaw-lxc-fixed-restore.sh": {
+    "mtime": 1771850438.5679727,
+    "ast_hash": "dc5bad9bda24947157f1ed8bc5839258",
+    "semantic_hash": "dc5bad9bda24947157f1ed8bc5839258"
+  },
+  "/home/slava/code/ansible/scripts/parse-amnezia-vpn.py": {
+    "mtime": 1775387894.4559538,
+    "ast_hash": "47177c4bf67f6d611103ec2398be3b29",
+    "semantic_hash": "47177c4bf67f6d611103ec2398be3b29"
+  },
+  "/home/slava/code/ansible/AI_INDEX.md": {
+    "mtime": 1771975069.2261665,
+    "ast_hash": "cfffa031358d42dee256fdaaa626886c",
+    "semantic_hash": "cfffa031358d42dee256fdaaa626886c"
+  },
+  "/home/slava/code/ansible/CONTEXT_INDEX.md": {
+    "mtime": 1771850438.5569727,
+    "ast_hash": "5cbd2f49b5d65b7e42f2d68443b7633a",
+    "semantic_hash": "5cbd2f49b5d65b7e42f2d68443b7633a"
+  },
+  "/home/slava/code/ansible/GEMINI.md": {
+    "mtime": 1780836335.3233626,
+    "ast_hash": "82efb97a359f5c7290bf2513d14686be",
+    "semantic_hash": "82efb97a359f5c7290bf2513d14686be"
+  },
+  "/home/slava/code/ansible/OPENCLAW_OPERATIONS.md": {
+    "mtime": 1771850438.5569727,
+    "ast_hash": "ad39a9545436cdd00793362222562c73",
+    "semantic_hash": "ad39a9545436cdd00793362222562c73"
+  },
+  "/home/slava/code/ansible/add-new-sudouser.yml": {
+    "mtime": 1771850438.5579567,
+    "ast_hash": "c989298bebb3552a141e7cbd60b9694e",
+    "semantic_hash": "c989298bebb3552a141e7cbd60b9694e"
+  },
+  "/home/slava/code/ansible/bootstrap-1-ssh-key-to-root-add-new-sudouser.yml": {
+    "mtime": 1773426752.7029815,
+    "ast_hash": "e4ac34ce0619ce0ef00d5b3ef9280733",
+    "semantic_hash": "e4ac34ce0619ce0ef00d5b3ef9280733"
+  },
+  "/home/slava/code/ansible/bootstrap-2-remove-root-access.yml": {
+    "mtime": 1776268666.8579853,
+    "ast_hash": "4baa0772593108a91bdfb6ded3349740",
+    "semantic_hash": "4baa0772593108a91bdfb6ded3349740"
+  },
+  "/home/slava/code/ansible/cleanup-awg-client.yml": {
+    "mtime": 1773864687.9839435,
+    "ast_hash": "e3421d67f060c9e2769c802eb596f226",
+    "semantic_hash": "e3421d67f060c9e2769c802eb596f226"
+  },
+  "/home/slava/code/ansible/cleanup-openclaw-docker-backup.yml": {
+    "mtime": 1771850438.5607772,
+    "ast_hash": "f3c44e0cfe63c3915dd24a48ef8121d3",
+    "semantic_hash": "f3c44e0cfe63c3915dd24a48ef8121d3"
+  },
+  "/home/slava/code/ansible/config-nginx-docker.yml": {
+    "mtime": 1774792477.8019562,
+    "ast_hash": "7df92cdb75d95cc37c1e0a9a6f3ce7c9",
+    "semantic_hash": "7df92cdb75d95cc37c1e0a9a6f3ce7c9"
+  },
+  "/home/slava/code/ansible/group_vars/all.yml": {
+    "mtime": 1774375404.728946,
+    "ast_hash": "9c218b73e6a39ea1f14308cc169d5a5f",
+    "semantic_hash": "9c218b73e6a39ea1f14308cc169d5a5f"
+  },
+  "/home/slava/code/ansible/group_vars/bootstrap.yml": {
+    "mtime": 1771850438.5619726,
+    "ast_hash": "592fc7c5a6c7b387e53b22a2c1e6ebef",
+    "semantic_hash": "592fc7c5a6c7b387e53b22a2c1e6ebef"
+  },
+  "/home/slava/code/ansible/group_vars/openclaw.yml": {
+    "mtime": 1771850438.562679,
+    "ast_hash": "53af0f584a1aeda13a88daeabdfd2c57",
+    "semantic_hash": "53af0f584a1aeda13a88daeabdfd2c57"
+  },
+  "/home/slava/code/ansible/group_vars/openclaw_vault.yml": {
+    "mtime": 1771850438.562833,
+    "ast_hash": "39be8d0eac94e267232cbb0f689ca224",
+    "semantic_hash": "39be8d0eac94e267232cbb0f689ca224"
+  },
+  "/home/slava/code/ansible/group_vars/ostrov.yml": {
+    "mtime": 1773767225.859948,
+    "ast_hash": "63c5d9ae36f098ac55e7673bd1a338b6",
+    "semantic_hash": "63c5d9ae36f098ac55e7673bd1a338b6"
+  },
+  "/home/slava/code/ansible/group_vars/ostrov_lxc.yml": {
+    "mtime": 1773951845.1774938,
+    "ast_hash": "eac7b12b40712c64d5d26de89358145f",
+    "semantic_hash": "eac7b12b40712c64d5d26de89358145f"
+  },
+  "/home/slava/code/ansible/group_vars/servers.yml": {
+    "mtime": 1771976914.35035,
+    "ast_hash": "3f0c3edcb6ff3dca109314cb89a89cf7",
+    "semantic_hash": "3f0c3edcb6ff3dca109314cb89a89cf7"
+  },
+  "/home/slava/code/ansible/group_vars/telegram-bot-alert_vault.yml": {
+    "mtime": 1771850438.5632215,
+    "ast_hash": "e635d7288f23258281c8bcde26fcc1ec",
+    "semantic_hash": "e635d7288f23258281c8bcde26fcc1ec"
+  },
+  "/home/slava/code/ansible/ostrov.md": {
+    "mtime": 1773788473.6158783,
+    "ast_hash": "2ad0b10575dfcf09c1bea339e0a13c36",
+    "semantic_hash": "2ad0b10575dfcf09c1bea339e0a13c36"
+  },
+  "/home/slava/code/ansible/setup-all settings-volna-ovh.yml": {
+    "mtime": 1771850438.5679727,
+    "ast_hash": "4469e220ea5acc0c1569a8bad5be2ee0",
+    "semantic_hash": "4469e220ea5acc0c1569a8bad5be2ee0"
+  },
+  "/home/slava/code/ansible/setup-auditd.yml": {
+    "mtime": 1771850438.5679727,
+    "ast_hash": "d514116d1b75885470b973a8a658cda9",
+    "semantic_hash": "d514116d1b75885470b973a8a658cda9"
+  },
+  "/home/slava/code/ansible/setup-awg-client-lxc.yml": {
+    "mtime": 1773951582.0265033,
+    "ast_hash": "d4de7afc6747568b9af80ef40e225ecb",
+    "semantic_hash": "d4de7afc6747568b9af80ef40e225ecb"
+  },
+  "/home/slava/code/ansible/setup-awg-client.yml": {
+    "mtime": 1773787257.8879216,
+    "ast_hash": "5196ebf855136e43f0aa5232bb88ac1d",
+    "semantic_hash": "5196ebf855136e43f0aa5232bb88ac1d"
+  },
+  "/home/slava/code/ansible/setup-cockpit.yml": {
+    "mtime": 1771850438.5692174,
+    "ast_hash": "97dbff8cfb682018829a78a5e5e48ffd",
+    "semantic_hash": "97dbff8cfb682018829a78a5e5e48ffd"
+  },
+  "/home/slava/code/ansible/setup-couchdb-ostrov.yml": {
+    "mtime": 1774811223.6379712,
+    "ast_hash": "9a88de3edacb59c2aac0e04c43961de2",
+    "semantic_hash": "9a88de3edacb59c2aac0e04c43961de2"
+  },
+  "/home/slava/code/ansible/setup-derper.yml": {
+    "mtime": 1774710703.8886633,
+    "ast_hash": "d4356127286c72f77fcbcc7ab534bdbb",
+    "semantic_hash": "d4356127286c72f77fcbcc7ab534bdbb"
+  },
+  "/home/slava/code/ansible/setup-fail2ban.yml": {
+    "mtime": 1774834423.6617825,
+    "ast_hash": "7bb5fbdf36914b07fbf623cec1af9b96",
+    "semantic_hash": "7bb5fbdf36914b07fbf623cec1af9b96"
+  },
+  "/home/slava/code/ansible/setup-headscale-derp-docker.yml": {
+    "mtime": 1774710849.934658,
+    "ast_hash": "11ae5abcc9358b14c6c45cb7e6efafc4",
+    "semantic_hash": "11ae5abcc9358b14c6c45cb7e6efafc4"
+  },
+  "/home/slava/code/ansible/setup-istall-nginx.yml": {
+    "mtime": 1771850438.5697887,
+    "ast_hash": "7eceb1757348d8f25f25a35e424e984f",
+    "semantic_hash": "7eceb1757348d8f25f25a35e424e984f"
+  },
+  "/home/slava/code/ansible/setup-lxc-ostrov.yml": {
+    "mtime": 1773950358.0245469,
+    "ast_hash": "67f1bc528acaa2dc311832405dfe557b",
+    "semantic_hash": "67f1bc528acaa2dc311832405dfe557b"
+  },
+  "/home/slava/code/ansible/setup-mtproto-docker.yml": {
+    "mtime": 1774984944.5129676,
+    "ast_hash": "8f1a3da8abbb0ef79a3629427b57efb1",
+    "semantic_hash": "8f1a3da8abbb0ef79a3629427b57efb1"
+  },
+  "/home/slava/code/ansible/setup-nginx-docker-volna-ovh.yml": {
+    "mtime": 1774833797.157791,
+    "ast_hash": "30fe4ad2dda87cf36c24c071ca1b872f",
+    "semantic_hash": "30fe4ad2dda87cf36c24c071ca1b872f"
+  },
+  "/home/slava/code/ansible/setup-openclaw-docker.yml": {
+    "mtime": 1771850438.5700014,
+    "ast_hash": "c2ad742156bc10ec3afe8c271c06dca0",
+    "semantic_hash": "c2ad742156bc10ec3afe8c271c06dca0"
+  },
+  "/home/slava/code/ansible/setup-openclaw-lxc-fixed-backup.yml": {
+    "mtime": 1771850438.5705664,
+    "ast_hash": "0dedda57ba677b42e936f7dfe698243c",
+    "semantic_hash": "0dedda57ba677b42e936f7dfe698243c"
+  },
+  "/home/slava/code/ansible/setup-openclaw-lxc-foundry-plugin.yml": {
+    "mtime": 1771850438.5707889,
+    "ast_hash": "4a0054aa8385314a7452ce3f75829eba",
+    "semantic_hash": "4a0054aa8385314a7452ce3f75829eba"
+  },
+  "/home/slava/code/ansible/setup-openclaw-lxc.yml": {
+    "mtime": 1771850438.5729725,
+    "ast_hash": "25657f4bbab70a5e1bf52a0cf1be20ad",
+    "semantic_hash": "25657f4bbab70a5e1bf52a0cf1be20ad"
+  },
+  "/home/slava/code/ansible/setup-ssh-login-telegram-alert.yml": {
+    "mtime": 1773689676.2949457,
+    "ast_hash": "d1bd6bb96248535faca454ccbdb30c1a",
+    "semantic_hash": "d1bd6bb96248535faca454ccbdb30c1a"
+  },
+  "/home/slava/code/ansible/setup-tailscale-client.yml": {
+    "mtime": 1774625733.6719751,
+    "ast_hash": "a914863b6f510374e4a1489ee3663cd3",
+    "semantic_hash": "a914863b6f510374e4a1489ee3663cd3"
+  },
+  "/home/slava/code/ansible/setup-xray-client-docker.yml": {
+    "mtime": 1776276379.397919,
+    "ast_hash": "abeb4723ac5674fa432a0786828ee80b",
+    "semantic_hash": "abeb4723ac5674fa432a0786828ee80b"
+  }
+}

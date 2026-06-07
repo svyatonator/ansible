@@ -1,0 +1,2559 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {
+    "hyperedges": [
+      {
+        "id": "openclaw_lxc_backup_mechanism",
+        "label": "OpenClaw LXC Fixed Backup Mechanism",
+        "nodes": [
+          "scripts_openclaw_lxc_fixed_backup_script",
+          "scripts_openclaw_lxc_fixed_restore_script",
+          "ansible_openclaw_operations_document"
+        ],
+        "relation": "form",
+        "confidence": "INFERRED",
+        "confidence_score": 0.95,
+        "source_file": "OPENCLAW_OPERATIONS.md"
+      },
+      {
+        "id": "server_bootstrap_flow",
+        "label": "Initial Server Bootstrap Workflow",
+        "nodes": [
+          "ansible_bootstrap_1_ssh_key_to_root_add_new_sudouser_playbook",
+          "ansible_bootstrap_2_remove_root_access_playbook",
+          "group_vars_bootstrap_vars"
+        ],
+        "relation": "implement",
+        "confidence": "INFERRED",
+        "confidence_score": 0.95,
+        "source_file": "bootstrap-1-ssh-key-to-root-add-new-sudouser.yml"
+      },
+      {
+        "id": "ansible_openclaw_ecosystem",
+        "label": "OpenClaw Deployment & Maintenance",
+        "nodes": [
+          "ansible_setup_openclaw_docker_playbook",
+          "ansible_setup_openclaw_lxc_playbook",
+          "ansible_setup_openclaw_lxc_fixed_backup_playbook",
+          "ansible_setup_openclaw_lxc_foundry_plugin_playbook"
+        ],
+        "relation": "implement",
+        "confidence": "INFERRED",
+        "confidence_score": 0.95,
+        "source_file": "setup-openclaw-lxc.yml"
+      },
+      {
+        "id": "ansible_secure_tunneling_stack",
+        "label": "Secure Tunneling & VPN Infrastructure",
+        "nodes": [
+          "ansible_setup_awg_client_playbook",
+          "ansible_setup_tailscale_client_playbook",
+          "ansible_setup_xray_client_docker_playbook",
+          "ansible_setup_mtproto_docker_playbook",
+          "ansible_setup_derper_playbook",
+          "ansible_setup_headscale_derp_docker_playbook"
+        ],
+        "relation": "form",
+        "confidence": "INFERRED",
+        "confidence_score": 0.85,
+        "source_file": "setup-headscale-derp-docker.yml"
+      },
+      {
+        "id": "ansible_ostrov_access_topology",
+        "label": "Ostrov Connectivity Topology",
+        "nodes": [
+          "ansible_ostrov_doc",
+          "ansible_setup_lxc_ostrov_playbook",
+          "ansible_concept_reverse_ssh_tunnel"
+        ],
+        "relation": "participate_in",
+        "confidence": "INFERRED",
+        "confidence_score": 0.95,
+        "source_file": "ostrov.md"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "label": "import-awg-config.py",
+      "file_type": "code",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L1",
+      "community": 4,
+      "norm_label": "import-awg-config.py",
+      "id": "scripts_import_awg_config"
+    },
+    {
+      "label": "parse_args()",
+      "file_type": "code",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L32",
+      "community": 4,
+      "norm_label": "parse_args()",
+      "id": "scripts_import_awg_config_parse_args"
+    },
+    {
+      "label": "Namespace",
+      "file_type": "code",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L32",
+      "community": 4,
+      "norm_label": "namespace",
+      "id": "namespace"
+    },
+    {
+      "label": "split_csv()",
+      "file_type": "code",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L66",
+      "community": 4,
+      "norm_label": "split_csv()",
+      "id": "scripts_import_awg_config_split_csv"
+    },
+    {
+      "label": "yaml_quote()",
+      "file_type": "code",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L72",
+      "community": 4,
+      "norm_label": "yaml_quote()",
+      "id": "scripts_import_awg_config_yaml_quote"
+    },
+    {
+      "label": "yaml_list()",
+      "file_type": "code",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L77",
+      "community": 4,
+      "norm_label": "yaml_list()",
+      "id": "scripts_import_awg_config_yaml_list"
+    },
+    {
+      "label": "build_awg_block()",
+      "file_type": "code",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L82",
+      "community": 4,
+      "norm_label": "build_awg_block()",
+      "id": "scripts_import_awg_config_build_awg_block"
+    },
+    {
+      "label": "SectionProxy",
+      "file_type": "code",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L82",
+      "community": 4,
+      "norm_label": "sectionproxy",
+      "id": "sectionproxy"
+    },
+    {
+      "label": "replace_awg_block()",
+      "file_type": "code",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L145",
+      "community": 4,
+      "norm_label": "replace_awg_block()",
+      "id": "scripts_import_awg_config_replace_awg_block"
+    },
+    {
+      "label": "main()",
+      "file_type": "code",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L156",
+      "community": 4,
+      "norm_label": "main()",
+      "id": "scripts_import_awg_config_main"
+    },
+    {
+      "label": "openclaw-lxc-fixed-backup.sh",
+      "file_type": "code",
+      "source_file": "scripts/openclaw-lxc-fixed-backup.sh",
+      "source_location": "L1",
+      "metadata": {
+        "language": "bash",
+        "kind": "file"
+      },
+      "community": 10,
+      "norm_label": "openclaw-lxc-fixed-backup.sh",
+      "id": "scripts_openclaw_lxc_fixed_backup"
+    },
+    {
+      "label": "usage()",
+      "file_type": "code",
+      "source_file": "scripts/openclaw-lxc-fixed-backup.sh",
+      "source_location": "L16",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "community": 10,
+      "norm_label": "usage()",
+      "id": "scripts_openclaw_lxc_fixed_backup_usage"
+    },
+    {
+      "label": "create_archive()",
+      "file_type": "code",
+      "source_file": "scripts/openclaw-lxc-fixed-backup.sh",
+      "source_location": "L89",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "community": 10,
+      "norm_label": "create_archive()",
+      "id": "scripts_openclaw_lxc_fixed_backup_create_archive"
+    },
+    {
+      "label": "openclaw-lxc-fixed-restore.sh",
+      "file_type": "code",
+      "source_file": "scripts/openclaw-lxc-fixed-restore.sh",
+      "source_location": "L1",
+      "metadata": {
+        "language": "bash",
+        "kind": "file"
+      },
+      "community": 10,
+      "norm_label": "openclaw-lxc-fixed-restore.sh",
+      "id": "scripts_openclaw_lxc_fixed_restore"
+    },
+    {
+      "label": "usage()",
+      "file_type": "code",
+      "source_file": "scripts/openclaw-lxc-fixed-restore.sh",
+      "source_location": "L10",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "community": 10,
+      "norm_label": "usage()",
+      "id": "scripts_openclaw_lxc_fixed_restore_usage"
+    },
+    {
+      "label": "parse-amnezia-vpn.py",
+      "file_type": "code",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L1",
+      "community": 11,
+      "norm_label": "parse-amnezia-vpn.py",
+      "id": "scripts_parse_amnezia_vpn"
+    },
+    {
+      "label": "fail()",
+      "file_type": "code",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L13",
+      "community": 11,
+      "norm_label": "fail()",
+      "id": "scripts_parse_amnezia_vpn_fail"
+    },
+    {
+      "label": "decode_export()",
+      "file_type": "code",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L18",
+      "community": 11,
+      "norm_label": "decode_export()",
+      "id": "scripts_parse_amnezia_vpn_decode_export"
+    },
+    {
+      "label": "extract_xray_config()",
+      "file_type": "code",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L47",
+      "community": 11,
+      "norm_label": "extract_xray_config()",
+      "id": "scripts_parse_amnezia_vpn_extract_xray_config"
+    },
+    {
+      "label": "build_summary()",
+      "file_type": "code",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L71",
+      "community": 11,
+      "norm_label": "build_summary()",
+      "id": "scripts_parse_amnezia_vpn_build_summary"
+    },
+    {
+      "label": "main()",
+      "file_type": "code",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L118",
+      "community": 11,
+      "norm_label": "main()",
+      "id": "scripts_parse_amnezia_vpn_main"
+    },
+    {
+      "label": "AI_INDEX.md",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L1",
+      "community": 0,
+      "norm_label": "ai_index.md",
+      "id": "ai_index"
+    },
+    {
+      "label": "AI Agent Index (Ansible Repository)",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L1",
+      "community": 0,
+      "norm_label": "ai agent index (ansible repository)",
+      "id": "ai_index_ai_agent_index_ansible_repository"
+    },
+    {
+      "label": "Quick Variable Reference",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L5",
+      "community": 5,
+      "norm_label": "quick variable reference",
+      "id": "ai_index_quick_variable_reference"
+    },
+    {
+      "label": "User Management Variables",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L7",
+      "community": 5,
+      "norm_label": "user management variables",
+      "id": "ai_index_user_management_variables"
+    },
+    {
+      "label": "OpenClaw Core Variables",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L19",
+      "community": 5,
+      "norm_label": "openclaw core variables",
+      "id": "ai_index_openclaw_core_variables"
+    },
+    {
+      "label": "OpenClaw Backup Variables",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L37",
+      "community": 5,
+      "norm_label": "openclaw backup variables",
+      "id": "ai_index_openclaw_backup_variables"
+    },
+    {
+      "label": "OpenClaw LXC-Specific Variables",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L45",
+      "community": 5,
+      "norm_label": "openclaw lxc-specific variables",
+      "id": "ai_index_openclaw_lxc_specific_variables"
+    },
+    {
+      "label": "OpenClaw Secrets (Vault)",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L58",
+      "community": 5,
+      "norm_label": "openclaw secrets (vault)",
+      "id": "ai_index_openclaw_secrets_vault"
+    },
+    {
+      "label": "OpenClaw Non-Secret Defaults",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L67",
+      "community": 5,
+      "norm_label": "openclaw non-secret defaults",
+      "id": "ai_index_openclaw_non_secret_defaults"
+    },
+    {
+      "label": "Cockpit Variables",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L72",
+      "community": 5,
+      "norm_label": "cockpit variables",
+      "id": "ai_index_cockpit_variables"
+    },
+    {
+      "label": "File Reference Map",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L82",
+      "community": 1,
+      "norm_label": "file reference map",
+      "id": "ai_index_file_reference_map"
+    },
+    {
+      "label": "Configuration Files",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L84",
+      "community": 1,
+      "norm_label": "configuration files",
+      "id": "ai_index_configuration_files"
+    },
+    {
+      "label": "Group Variables",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L91",
+      "community": 1,
+      "norm_label": "group variables",
+      "id": "ai_index_group_variables"
+    },
+    {
+      "label": "Playbooks by Category",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L100",
+      "community": 1,
+      "norm_label": "playbooks by category",
+      "id": "ai_index_playbooks_by_category"
+    },
+    {
+      "label": "Bootstrap Playbooks",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L102",
+      "community": 1,
+      "norm_label": "bootstrap playbooks",
+      "id": "ai_index_bootstrap_playbooks"
+    },
+    {
+      "label": "User Management",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L109",
+      "community": 1,
+      "norm_label": "user management",
+      "id": "ai_index_user_management"
+    },
+    {
+      "label": "Service Setup",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L114",
+      "community": 1,
+      "norm_label": "service setup",
+      "id": "ai_index_service_setup"
+    },
+    {
+      "label": "OpenClaw Deployment",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L122",
+      "community": 1,
+      "norm_label": "openclaw deployment",
+      "id": "ai_index_openclaw_deployment"
+    },
+    {
+      "label": "Nginx/Sites",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L131",
+      "community": 1,
+      "norm_label": "nginx/sites",
+      "id": "ai_index_nginx_sites"
+    },
+    {
+      "label": "Templates",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L137",
+      "community": 1,
+      "norm_label": "templates",
+      "id": "ai_index_templates"
+    },
+    {
+      "label": "Scripts",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L157",
+      "community": 1,
+      "norm_label": "scripts",
+      "id": "ai_index_scripts"
+    },
+    {
+      "label": "Inventory Groups",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L165",
+      "community": 0,
+      "norm_label": "inventory groups",
+      "id": "ai_index_inventory_groups"
+    },
+    {
+      "label": "Common Tasks Quick Reference",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L182",
+      "community": 0,
+      "norm_label": "common tasks quick reference",
+      "id": "ai_index_common_tasks_quick_reference"
+    },
+    {
+      "label": "Add new sudo user",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L184",
+      "community": 0,
+      "norm_label": "add new sudo user",
+      "id": "ai_index_add_new_sudo_user"
+    },
+    {
+      "label": "Bootstrap new server (password)",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L192",
+      "community": 0,
+      "norm_label": "bootstrap new server (password)",
+      "id": "ai_index_bootstrap_new_server_password"
+    },
+    {
+      "label": "Deploy OpenClaw (LXC)",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L199",
+      "community": 0,
+      "norm_label": "deploy openclaw (lxc)",
+      "id": "ai_index_deploy_openclaw_lxc"
+    },
+    {
+      "label": "Deploy OpenClaw (Docker)",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L206",
+      "community": 0,
+      "norm_label": "deploy openclaw (docker)",
+      "id": "ai_index_deploy_openclaw_docker"
+    },
+    {
+      "label": "Variable Search Patterns",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L213",
+      "community": 0,
+      "norm_label": "variable search patterns",
+      "id": "ai_index_variable_search_patterns"
+    },
+    {
+      "label": "Find where variable is defined",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L215",
+      "community": 0,
+      "norm_label": "find where variable is defined",
+      "id": "ai_index_find_where_variable_is_defined"
+    },
+    {
+      "label": "Find where variable is used",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L220",
+      "community": 0,
+      "norm_label": "find where variable is used",
+      "id": "ai_index_find_where_variable_is_used"
+    },
+    {
+      "label": "Find vault-encrypted variables",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L225",
+      "community": 0,
+      "norm_label": "find vault-encrypted variables",
+      "id": "ai_index_find_vault_encrypted_variables"
+    },
+    {
+      "label": "Dependencies Between Files",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L232",
+      "community": 0,
+      "norm_label": "dependencies between files",
+      "id": "ai_index_dependencies_between_files"
+    },
+    {
+      "label": "Notes for AI Agents",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L256",
+      "community": 0,
+      "norm_label": "notes for ai agents",
+      "id": "ai_index_notes_for_ai_agents"
+    },
+    {
+      "label": "CONTEXT_INDEX.md",
+      "file_type": "document",
+      "source_file": "CONTEXT_INDEX.md",
+      "source_location": "L1",
+      "community": 2,
+      "norm_label": "context_index.md",
+      "id": "context_index"
+    },
+    {
+      "label": "\u0418\u043d\u0434\u0435\u043a\u0441 \u043a\u043e\u043d\u0442\u0435\u043a\u0441\u0442\u0430 (Ansible \u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u0439)",
+      "file_type": "document",
+      "source_file": "CONTEXT_INDEX.md",
+      "source_location": "L1",
+      "community": 2,
+      "norm_label": "\u0438\u043d\u0434\u0435\u043a\u0441 \u043a\u043e\u043d\u0442\u0435\u043a\u0441\u0442\u0430 (ansible \u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u0438)",
+      "id": "context_index_\u0438\u043d\u0434\u0435\u043a\u0441_\u043a\u043e\u043d\u0442\u0435\u043a\u0441\u0442\u0430_ansible_\u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u0439"
+    },
+    {
+      "label": "\u041e\u0431\u0437\u043e\u0440 \u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u044f",
+      "file_type": "document",
+      "source_file": "CONTEXT_INDEX.md",
+      "source_location": "L3",
+      "community": 2,
+      "norm_label": "\u043e\u0431\u0437\u043e\u0440 \u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u044f",
+      "id": "context_index_\u043e\u0431\u0437\u043e\u0440_\u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u044f"
+    },
+    {
+      "label": "\u041a\u043e\u043d\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u044f Ansible",
+      "file_type": "document",
+      "source_file": "CONTEXT_INDEX.md",
+      "source_location": "L12",
+      "community": 2,
+      "norm_label": "\u043a\u043e\u043d\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u044f ansible",
+      "id": "context_index_\u043a\u043e\u043d\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u044f_ansible"
+    },
+    {
+      "label": "\u0418\u043d\u0432\u0435\u043d\u0442\u0430\u0440\u044c",
+      "file_type": "document",
+      "source_file": "CONTEXT_INDEX.md",
+      "source_location": "L16",
+      "community": 2,
+      "norm_label": "\u0438\u043d\u0432\u0435\u043d\u0442\u0430\u0440\u044c",
+      "id": "context_index_\u0438\u043d\u0432\u0435\u043d\u0442\u0430\u0440\u044c"
+    },
+    {
+      "label": "\u041f\u0435\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435",
+      "file_type": "document",
+      "source_file": "CONTEXT_INDEX.md",
+      "source_location": "L20",
+      "community": 2,
+      "norm_label": "\u043f\u0435\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435",
+      "id": "context_index_\u043f\u0435\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435"
+    },
+    {
+      "label": "\u041f\u043b\u0435\u0439\u0431\u0443\u043a\u0438",
+      "file_type": "document",
+      "source_file": "CONTEXT_INDEX.md",
+      "source_location": "L52",
+      "community": 2,
+      "norm_label": "\u043f\u043b\u0435\u0438\u0431\u0443\u043a\u0438",
+      "id": "context_index_\u043f\u043b\u0435\u0439\u0431\u0443\u043a\u0438"
+    },
+    {
+      "label": "Certbot \u043d\u0430 rif-u22-ger (\u0442\u0435\u043a\u0443\u0449\u0430\u044f \u0441\u0445\u0435\u043c\u0430)",
+      "file_type": "document",
+      "source_file": "CONTEXT_INDEX.md",
+      "source_location": "L121",
+      "community": 2,
+      "norm_label": "certbot \u043d\u0430 rif-u22-ger (\u0442\u0435\u043a\u0443\u0449\u0430\u044f \u0441\u0445\u0435\u043c\u0430)",
+      "id": "context_index_certbot_\u043d\u0430_rif_u22_ger_\u0442\u0435\u043a\u0443\u0449\u0430\u044f_\u0441\u0445\u0435\u043c\u0430"
+    },
+    {
+      "label": "\u041a\u043e\u043c\u0430\u043d\u0434\u044b \u0437\u0430\u043f\u0443\u0441\u043a\u0430 (\u0438\u0437 `readme`)",
+      "file_type": "document",
+      "source_file": "CONTEXT_INDEX.md",
+      "source_location": "L138",
+      "community": 2,
+      "norm_label": "\u043a\u043e\u043c\u0430\u043d\u0434\u044b \u0437\u0430\u043f\u0443\u0441\u043a\u0430 (\u0438\u0437 `readme`)",
+      "id": "context_index_\u043a\u043e\u043c\u0430\u043d\u0434\u044b_\u0437\u0430\u043f\u0443\u0441\u043a\u0430_\u0438\u0437_readme"
+    },
+    {
+      "label": "\u041e\u043f\u0435\u0440\u0430\u0446\u0438\u043e\u043d\u043d\u044b\u0435 \u0437\u0430\u043c\u0435\u0442\u043a\u0438",
+      "file_type": "document",
+      "source_file": "CONTEXT_INDEX.md",
+      "source_location": "L154",
+      "community": 2,
+      "norm_label": "\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u043e\u043d\u043d\u044b\u0435 \u0437\u0430\u043c\u0435\u0442\u043a\u0438",
+      "id": "context_index_\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u043e\u043d\u043d\u044b\u0435_\u0437\u0430\u043c\u0435\u0442\u043a\u0438"
+    },
+    {
+      "label": "\u0427\u0443\u0432\u0441\u0442\u0432\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0434\u0430\u043d\u043d\u044b\u0435",
+      "file_type": "document",
+      "source_file": "CONTEXT_INDEX.md",
+      "source_location": "L163",
+      "community": 2,
+      "norm_label": "\u0447\u0443\u0432\u0441\u0442\u0432\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0434\u0430\u043d\u043d\u044b\u0435",
+      "id": "context_index_\u0447\u0443\u0432\u0441\u0442\u0432\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435_\u0434\u0430\u043d\u043d\u044b\u0435"
+    },
+    {
+      "label": "OPENCLAW_OPERATIONS.md",
+      "file_type": "document",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L1",
+      "community": 3,
+      "norm_label": "openclaw_operations.md",
+      "id": "openclaw_operations"
+    },
+    {
+      "label": "\u041e\u043f\u0435\u0440\u0430\u0446\u0438\u043e\u043d\u043d\u0430\u044f \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u0446\u0438\u044f OpenClaw",
+      "file_type": "document",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L1",
+      "community": 3,
+      "norm_label": "\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u043e\u043d\u043d\u0430\u044f \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u0446\u0438\u044f openclaw",
+      "id": "openclaw_operations_\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u043e\u043d\u043d\u0430\u044f_\u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u0446\u0438\u044f_openclaw"
+    },
+    {
+      "label": "\u0410\u043a\u0442\u0443\u0430\u043b\u044c\u043d\u043e: LXC workflow (Ubuntu 22)",
+      "file_type": "document",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L2",
+      "community": 8,
+      "norm_label": "\u0430\u043a\u0442\u0443\u0430\u043b\u044c\u043d\u043e: lxc workflow (ubuntu 22)",
+      "id": "openclaw_operations_\u0430\u043a\u0442\u0443\u0430\u043b\u044c\u043d\u043e_lxc_workflow_ubuntu_22"
+    },
+    {
+      "label": "\u0412\u0430\u0436\u043d\u044b\u0435 \u043f\u0443\u0442\u0438 (LXC)",
+      "file_type": "document",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L16",
+      "community": 8,
+      "norm_label": "\u0432\u0430\u0436\u043d\u044b\u0435 \u043f\u0443\u0442\u0438 (lxc)",
+      "id": "openclaw_operations_\u0432\u0430\u0436\u043d\u044b\u0435_\u043f\u0443\u0442\u0438_lxc"
+    },
+    {
+      "label": "\u0411\u044b\u0441\u0442\u0440\u044b\u0435 post-check \u043a\u043e\u043c\u0430\u043d\u0434\u044b (LXC)",
+      "file_type": "document",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L24",
+      "community": 8,
+      "norm_label": "\u0431\u044b\u0441\u0442\u0440\u044b\u0435 post-check \u043a\u043e\u043c\u0430\u043d\u0434\u044b (lxc)",
+      "id": "openclaw_operations_\u0431\u044b\u0441\u0442\u0440\u044b\u0435_post_check_\u043a\u043e\u043c\u0430\u043d\u0434\u044b_lxc"
+    },
+    {
+      "label": "Telegram allowlist",
+      "file_type": "document",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L33",
+      "community": 8,
+      "norm_label": "telegram allowlist",
+      "id": "openclaw_operations_telegram_allowlist"
+    },
+    {
+      "label": "\u0412\u0430\u0436\u043d\u043e \u043f\u043e \u0437\u0430\u043f\u0443\u0441\u043a\u0443 \u043f\u043b\u0435\u0439\u0431\u0443\u043a\u043e\u0432",
+      "file_type": "document",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L39",
+      "community": 8,
+      "norm_label": "\u0432\u0430\u0436\u043d\u043e \u043f\u043e \u0437\u0430\u043f\u0443\u0441\u043a\u0443 \u043f\u043b\u0435\u0438\u0431\u0443\u043a\u043e\u0432",
+      "id": "openclaw_operations_\u0432\u0430\u0436\u043d\u043e_\u043f\u043e_\u0437\u0430\u043f\u0443\u0441\u043a\u0443_\u043f\u043b\u0435\u0439\u0431\u0443\u043a\u043e\u0432"
+    },
+    {
+      "label": "\u0427\u0430\u0441\u0442\u0430\u044f \u043f\u0440\u043e\u0431\u043b\u0435\u043c\u0430 \u043d\u0430 \u0445\u043e\u0441\u0442\u0430\u0445 \u0441 Docker",
+      "file_type": "document",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L43",
+      "community": 8,
+      "norm_label": "\u0447\u0430\u0441\u0442\u0430\u044f \u043f\u0440\u043e\u0431\u043b\u0435\u043c\u0430 \u043d\u0430 \u0445\u043e\u0441\u0442\u0430\u0445 \u0441 docker",
+      "id": "openclaw_operations_\u0447\u0430\u0441\u0442\u0430\u044f_\u043f\u0440\u043e\u0431\u043b\u0435\u043c\u0430_\u043d\u0430_\u0445\u043e\u0441\u0442\u0430\u0445_\u0441_docker"
+    },
+    {
+      "label": "Fixed backup/restore (LXC)",
+      "file_type": "document",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L53",
+      "community": 8,
+      "norm_label": "fixed backup/restore (lxc)",
+      "id": "openclaw_operations_fixed_backup_restore_lxc"
+    },
+    {
+      "label": "\u041f\u0443\u0442\u0438 \u043d\u0430 \u0445\u043e\u0441\u0442\u0435",
+      "file_type": "document",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L75",
+      "community": 3,
+      "norm_label": "\u043f\u0443\u0442\u0438 \u043d\u0430 \u0445\u043e\u0441\u0442\u0435",
+      "id": "openclaw_operations_\u043f\u0443\u0442\u0438_\u043d\u0430_\u0445\u043e\u0441\u0442\u0435"
+    },
+    {
+      "label": "\u0421\u0438\u0441\u0442\u0435\u043c\u0430 \u0431\u044d\u043a\u0430\u043f\u043e\u0432",
+      "file_type": "document",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L85",
+      "community": 3,
+      "norm_label": "\u0441\u0438\u0441\u0442\u0435\u043c\u0430 \u0431\u044d\u043a\u0430\u043f\u043e\u0432",
+      "id": "openclaw_operations_\u0441\u0438\u0441\u0442\u0435\u043c\u0430_\u0431\u044d\u043a\u0430\u043f\u043e\u0432"
+    },
+    {
+      "label": "\u041e\u043f\u0435\u0440\u0430\u0446\u0438\u0438 \u0431\u044d\u043a\u0430\u043f\u0430",
+      "file_type": "document",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L93",
+      "community": 3,
+      "norm_label": "\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u0438 \u0431\u044d\u043a\u0430\u043f\u0430",
+      "id": "openclaw_operations_\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u0438_\u0431\u044d\u043a\u0430\u043f\u0430"
+    },
+    {
+      "label": "\u041e\u043f\u0435\u0440\u0430\u0446\u0438\u0438 \u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u044f",
+      "file_type": "document",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L121",
+      "community": 3,
+      "norm_label": "\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u0438 \u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u044f",
+      "id": "openclaw_operations_\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u0438_\u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u044f"
+    },
+    {
+      "label": "SSH-\u0442\u0443\u043d\u043d\u0435\u043b\u044c \u0434\u043b\u044f Gateway HTTP/WS",
+      "file_type": "document",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L143",
+      "community": 3,
+      "norm_label": "ssh-\u0442\u0443\u043d\u043d\u0435\u043b\u044c \u0434\u043b\u044f gateway http/ws",
+      "id": "openclaw_operations_ssh_\u0442\u0443\u043d\u043d\u0435\u043b\u044c_\u0434\u043b\u044f_gateway_http_ws"
+    },
+    {
+      "label": "\u0414\u0435\u043f\u043b\u043e\u0439 \u0438 \u043f\u0435\u0440\u0435\u043a\u043e\u043d\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u044f",
+      "file_type": "document",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L161",
+      "community": 3,
+      "norm_label": "\u0434\u0435\u043f\u043b\u043e\u0438 \u0438 \u043f\u0435\u0440\u0435\u043a\u043e\u043d\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u044f",
+      "id": "openclaw_operations_\u0434\u0435\u043f\u043b\u043e\u0439_\u0438_\u043f\u0435\u0440\u0435\u043a\u043e\u043d\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u044f"
+    },
+    {
+      "label": "\u0420\u0443\u0447\u043d\u0430\u044f \u0440\u0430\u0431\u043e\u0442\u0430 \u0441\u043e skills (\u0447\u0435\u0440\u0435\u0437 SSH)",
+      "file_type": "document",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L172",
+      "community": 3,
+      "norm_label": "\u0440\u0443\u0447\u043d\u0430\u044f \u0440\u0430\u0431\u043e\u0442\u0430 \u0441\u043e skills (\u0447\u0435\u0440\u0435\u0437 ssh)",
+      "id": "openclaw_operations_\u0440\u0443\u0447\u043d\u0430\u044f_\u0440\u0430\u0431\u043e\u0442\u0430_\u0441\u043e_skills_\u0447\u0435\u0440\u0435\u0437_ssh"
+    },
+    {
+      "label": "\u041e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u0435 \u0432\u0435\u0440\u0441\u0438\u0438 OpenClaw (\u0432\u0440\u0443\u0447\u043d\u0443\u044e)",
+      "file_type": "document",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L199",
+      "community": 3,
+      "norm_label": "\u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u0435 \u0432\u0435\u0440\u0441\u0438\u0438 openclaw (\u0432\u0440\u0443\u0447\u043d\u0443\u044e)",
+      "id": "openclaw_operations_\u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u0435_\u0432\u0435\u0440\u0441\u0438\u0438_openclaw_\u0432\u0440\u0443\u0447\u043d\u0443\u044e"
+    },
+    {
+      "label": "\u0423\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u043a\u043e\u043d\u0442\u0435\u0439\u043d\u0435\u0440\u043e\u043c OpenClaw",
+      "file_type": "document",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L223",
+      "community": 3,
+      "norm_label": "\u0443\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u043a\u043e\u043d\u0442\u0435\u0438\u043d\u0435\u0440\u043e\u043c openclaw",
+      "id": "openclaw_operations_\u0443\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435_\u043a\u043e\u043d\u0442\u0435\u0439\u043d\u0435\u0440\u043e\u043c_openclaw"
+    },
+    {
+      "label": "ostrov.md",
+      "file_type": "document",
+      "source_file": "ostrov.md",
+      "source_location": "L1",
+      "community": 6,
+      "norm_label": "ostrov.md",
+      "id": "ostrov"
+    },
+    {
+      "label": "Ostrov",
+      "file_type": "document",
+      "source_file": "ostrov.md",
+      "source_location": "L1",
+      "community": 6,
+      "norm_label": "ostrov",
+      "id": "ostrov_ostrov"
+    },
+    {
+      "label": "\u0421\u0445\u0435\u043c\u0430 \u0434\u043e\u0441\u0442\u0443\u043f\u0430",
+      "file_type": "document",
+      "source_file": "ostrov.md",
+      "source_location": "L5",
+      "community": 6,
+      "norm_label": "\u0441\u0445\u0435\u043c\u0430 \u0434\u043e\u0441\u0442\u0443\u043f\u0430",
+      "id": "ostrov_\u0441\u0445\u0435\u043c\u0430_\u0434\u043e\u0441\u0442\u0443\u043f\u0430"
+    },
+    {
+      "label": "Systemd unit \u043d\u0430 ostrov",
+      "file_type": "document",
+      "source_file": "ostrov.md",
+      "source_location": "L19",
+      "community": 6,
+      "norm_label": "systemd unit \u043d\u0430 ostrov",
+      "id": "ostrov_systemd_unit_\u043d\u0430_ostrov"
+    },
+    {
+      "label": "\u0412\u0430\u0436\u043d\u044b\u0435 \u0434\u0435\u0442\u0430\u043b\u0438",
+      "file_type": "document",
+      "source_file": "ostrov.md",
+      "source_location": "L39",
+      "community": 6,
+      "norm_label": "\u0432\u0430\u0436\u043d\u044b\u0435 \u0434\u0435\u0442\u0430\u043b\u0438",
+      "id": "ostrov_\u0432\u0430\u0436\u043d\u044b\u0435_\u0434\u0435\u0442\u0430\u043b\u0438"
+    },
+    {
+      "label": "\u041a\u0430\u043a \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0430\u0442\u044c\u0441\u044f \u0432\u0440\u0443\u0447\u043d\u0443\u044e",
+      "file_type": "document",
+      "source_file": "ostrov.md",
+      "source_location": "L46",
+      "community": 6,
+      "norm_label": "\u043a\u0430\u043a \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0430\u0442\u044c\u0441\u044f \u0432\u0440\u0443\u0447\u043d\u0443\u044e",
+      "id": "ostrov_\u043a\u0430\u043a_\u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0430\u0442\u044c\u0441\u044f_\u0432\u0440\u0443\u0447\u043d\u0443\u044e"
+    },
+    {
+      "label": "\u041a\u0430\u043a \u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0442 Ansible",
+      "file_type": "document",
+      "source_file": "ostrov.md",
+      "source_location": "L65",
+      "community": 6,
+      "norm_label": "\u043a\u0430\u043a \u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0442 ansible",
+      "id": "ostrov_\u043a\u0430\u043a_\u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0442_ansible"
+    },
+    {
+      "label": "\u0427\u0442\u043e \u043d\u0435\u043b\u044c\u0437\u044f \u0437\u0430\u0431\u044b\u0432\u0430\u0442\u044c",
+      "file_type": "document",
+      "source_file": "ostrov.md",
+      "source_location": "L95",
+      "community": 6,
+      "norm_label": "\u0447\u0442\u043e \u043d\u0435\u043b\u044c\u0437\u044f \u0437\u0430\u0431\u044b\u0432\u0430\u0442\u044c",
+      "id": "ostrov_\u0447\u0442\u043e_\u043d\u0435\u043b\u044c\u0437\u044f_\u0437\u0430\u0431\u044b\u0432\u0430\u0442\u044c"
+    },
+    {
+      "label": "settings.json",
+      "file_type": "code",
+      "source_file": ".gemini/settings.json",
+      "source_location": "L1",
+      "id": "gemini_settings",
+      "community": 13,
+      "norm_label": "settings.json"
+    },
+    {
+      "label": "hooks",
+      "file_type": "code",
+      "source_file": ".gemini/settings.json",
+      "source_location": "L2",
+      "id": "gemini_settings_hooks",
+      "community": 13,
+      "norm_label": "hooks"
+    },
+    {
+      "label": "BeforeTool",
+      "file_type": "code",
+      "source_file": ".gemini/settings.json",
+      "source_location": "L3",
+      "id": "gemini_settings_hooks_beforetool",
+      "community": 13,
+      "norm_label": "beforetool"
+    },
+    {
+      "label": "Gemini Settings",
+      "file_type": "code",
+      "source_file": ".gemini/settings.json",
+      "id": "gemini_settings_config",
+      "community": 30,
+      "norm_label": "gemini settings"
+    },
+    {
+      "label": "AmneziaWG Config Importer",
+      "file_type": "code",
+      "source_file": "scripts/import-awg-config.py",
+      "id": "scripts_import_awg_config_script",
+      "community": 14,
+      "norm_label": "amneziawg config importer"
+    },
+    {
+      "label": "Amnezia VPN Export Parser",
+      "file_type": "code",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "id": "scripts_parse_amnezia_vpn_script",
+      "community": 33,
+      "norm_label": "amnezia vpn export parser"
+    },
+    {
+      "label": "AI Agent Index",
+      "file_type": "document",
+      "source_file": "AI_INDEX.md",
+      "rationale": "Optimized index for AI agents to quickly locate variables, files, and configurations.",
+      "id": "ansible_ai_index_document",
+      "community": 7,
+      "norm_label": "ai agent index"
+    },
+    {
+      "label": "Repository Context Index",
+      "file_type": "document",
+      "source_file": "CONTEXT_INDEX.md",
+      "rationale": "Overview of host setup, user management, and service deployment.",
+      "id": "ansible_context_index_document",
+      "community": 7,
+      "norm_label": "repository context index"
+    },
+    {
+      "label": "Gemini Knowledge Graph Rules",
+      "file_type": "document",
+      "source_file": "GEMINI.md",
+      "rationale": "Rules for using the graphify-powered knowledge graph for codebase navigation.",
+      "id": "ansible_gemini_document",
+      "community": 23,
+      "norm_label": "gemini knowledge graph rules"
+    },
+    {
+      "label": "OpenClaw Operations Manual",
+      "file_type": "document",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "rationale": "Operations for OpenClaw (paths, backup/restore, SSH-tunnel).",
+      "id": "ansible_openclaw_operations_document",
+      "community": 10,
+      "norm_label": "openclaw operations manual"
+    },
+    {
+      "label": "Add New Sudo User Playbook",
+      "file_type": "code",
+      "source_file": "add-new-sudouser.yml",
+      "id": "ansible_add_new_sudouser_playbook",
+      "community": 7,
+      "norm_label": "add new sudo user playbook"
+    },
+    {
+      "label": "Bootstrap: Root SSH Key to New Sudo User",
+      "file_type": "code",
+      "source_file": "bootstrap-1-ssh-key-to-root-add-new-sudouser.yml",
+      "id": "ansible_bootstrap_1_ssh_key_to_root_add_new_sudouser_playbook",
+      "community": 7,
+      "norm_label": "bootstrap: root ssh key to new sudo user"
+    },
+    {
+      "label": "Bootstrap: Remove Root Access",
+      "file_type": "code",
+      "source_file": "bootstrap-2-remove-root-access.yml",
+      "id": "ansible_bootstrap_2_remove_root_access_playbook",
+      "community": 7,
+      "norm_label": "bootstrap: remove root access"
+    },
+    {
+      "label": "Cleanup AmneziaWG Client",
+      "file_type": "code",
+      "source_file": "cleanup-awg-client.yml",
+      "id": "ansible_cleanup_awg_client_playbook",
+      "community": 20,
+      "norm_label": "cleanup amneziawg client"
+    },
+    {
+      "label": "Cleanup OpenClaw Docker Stack",
+      "file_type": "code",
+      "source_file": "cleanup-openclaw-docker-backup.yml",
+      "id": "ansible_cleanup_openclaw_docker_backup_playbook",
+      "community": 21,
+      "norm_label": "cleanup openclaw docker stack"
+    },
+    {
+      "label": "Configure Nginx for Headscale/DERP",
+      "file_type": "code",
+      "source_file": "config-nginx-docker.yml",
+      "id": "ansible_config_nginx_docker_playbook",
+      "community": 15,
+      "norm_label": "configure nginx for headscale/derp"
+    },
+    {
+      "label": "Global Variables (All Groups)",
+      "file_type": "code",
+      "source_file": "group_vars/all.yml",
+      "id": "group_vars_all_vars",
+      "community": 7,
+      "norm_label": "global variables (all groups)"
+    },
+    {
+      "label": "Bootstrap Group Variables",
+      "file_type": "code",
+      "source_file": "group_vars/bootstrap.yml",
+      "id": "group_vars_bootstrap_vars",
+      "community": 7,
+      "norm_label": "bootstrap group variables"
+    },
+    {
+      "label": "OpenClaw Public Variables",
+      "file_type": "code",
+      "source_file": "group_vars/openclaw.yml",
+      "id": "group_vars_openclaw_vars",
+      "community": 31,
+      "norm_label": "openclaw public variables"
+    },
+    {
+      "label": "OpenClaw Secret Variables (Vault)",
+      "file_type": "code",
+      "source_file": "group_vars/openclaw_vault.yml",
+      "id": "group_vars_openclaw_vault_vars",
+      "community": 32,
+      "norm_label": "openclaw secret variables (vault)"
+    },
+    {
+      "label": "Ostrov Group Variables",
+      "file_type": "code",
+      "source_file": "group_vars/ostrov.yml",
+      "id": "group_vars_ostrov_vars",
+      "community": 14,
+      "norm_label": "ostrov group variables"
+    },
+    {
+      "label": "Ostrov LXC Group Variables",
+      "file_type": "code",
+      "source_file": "group_vars/ostrov_lxc.yml",
+      "id": "group_vars_ostrov_lxc_vars",
+      "community": 14,
+      "norm_label": "ostrov lxc group variables"
+    },
+    {
+      "label": "Production Server Variables",
+      "file_type": "code",
+      "source_file": "group_vars/servers.yml",
+      "id": "group_vars_servers_vars",
+      "community": 15,
+      "norm_label": "production server variables"
+    },
+    {
+      "label": "Ostrov Machine Documentation",
+      "file_type": "document",
+      "source_file": "ostrov.md",
+      "id": "ansible_ostrov_doc",
+      "community": 9,
+      "norm_label": "ostrov machine documentation"
+    },
+    {
+      "label": "Nginx Volna.ovh Static Sites Setup",
+      "file_type": "code",
+      "source_file": "setup-all settings-volna-ovh.yml",
+      "id": "ansible_setup_all_settings_volna_ovh_playbook",
+      "community": 17,
+      "norm_label": "nginx volna.ovh static sites setup"
+    },
+    {
+      "label": "Auditd Command Logging Setup",
+      "file_type": "code",
+      "source_file": "setup-auditd.yml",
+      "id": "ansible_setup_auditd_playbook",
+      "community": 24,
+      "norm_label": "auditd command logging setup"
+    },
+    {
+      "label": "AmneziaWG LXC Client Setup",
+      "file_type": "code",
+      "source_file": "setup-awg-client-lxc.yml",
+      "id": "ansible_setup_awg_client_lxc_playbook",
+      "community": 18,
+      "norm_label": "amneziawg lxc client setup"
+    },
+    {
+      "label": "AmneziaWG Host Client Setup",
+      "file_type": "code",
+      "source_file": "setup-awg-client.yml",
+      "id": "ansible_setup_awg_client_playbook",
+      "community": 18,
+      "norm_label": "amneziawg host client setup"
+    },
+    {
+      "label": "Cockpit Web Console with 2FA",
+      "file_type": "code",
+      "source_file": "setup-cockpit.yml",
+      "id": "ansible_setup_cockpit_playbook",
+      "community": 9,
+      "norm_label": "cockpit web console with 2fa"
+    },
+    {
+      "label": "CouchDB for Obsidian LiveSync",
+      "file_type": "code",
+      "source_file": "setup-couchdb-ostrov.yml",
+      "id": "ansible_setup_couchdb_ostrov_playbook",
+      "community": 9,
+      "norm_label": "couchdb for obsidian livesync"
+    },
+    {
+      "label": "Tailscale DERP Relay Setup",
+      "file_type": "code",
+      "source_file": "setup-derper.yml",
+      "id": "ansible_setup_derper_playbook",
+      "community": 25,
+      "norm_label": "tailscale derp relay setup"
+    },
+    {
+      "label": "Fail2ban Security Hardening",
+      "file_type": "code",
+      "source_file": "setup-fail2ban.yml",
+      "id": "ansible_setup_fail2ban_playbook",
+      "community": 9,
+      "norm_label": "fail2ban security hardening"
+    },
+    {
+      "label": "Headscale with Embedded DERP",
+      "file_type": "code",
+      "source_file": "setup-headscale-derp-docker.yml",
+      "id": "ansible_setup_headscale_derp_docker_playbook",
+      "community": 19,
+      "norm_label": "headscale with embedded derp"
+    },
+    {
+      "label": "Nginx and Certbot Basic Install",
+      "file_type": "code",
+      "source_file": "setup-istall-nginx.yml",
+      "id": "ansible_setup_istall_nginx_playbook",
+      "community": 26,
+      "norm_label": "nginx and certbot basic install"
+    },
+    {
+      "label": "Ostrov LXC Provisioning with Reverse SSH",
+      "file_type": "code",
+      "source_file": "setup-lxc-ostrov.yml",
+      "id": "ansible_setup_lxc_ostrov_playbook",
+      "community": 9,
+      "norm_label": "ostrov lxc provisioning with reverse ssh"
+    },
+    {
+      "label": "MTProto Telegram Proxy",
+      "file_type": "code",
+      "source_file": "setup-mtproto-docker.yml",
+      "id": "ansible_setup_mtproto_docker_playbook",
+      "community": 27,
+      "norm_label": "mtproto telegram proxy"
+    },
+    {
+      "label": "Nginx Docker Static Sites",
+      "file_type": "code",
+      "source_file": "setup-nginx-docker-volna-ovh.yml",
+      "id": "ansible_setup_nginx_docker_volna_ovh_playbook",
+      "community": 17,
+      "norm_label": "nginx docker static sites"
+    },
+    {
+      "label": "OpenClaw AI Docker Deployment",
+      "file_type": "code",
+      "source_file": "setup-openclaw-docker.yml",
+      "id": "ansible_setup_openclaw_docker_playbook",
+      "community": 28,
+      "norm_label": "openclaw ai docker deployment"
+    },
+    {
+      "label": "OpenClaw LXC Fixed Backup Policy",
+      "file_type": "code",
+      "source_file": "setup-openclaw-lxc-fixed-backup.yml",
+      "id": "ansible_setup_openclaw_lxc_fixed_backup_playbook",
+      "community": 12,
+      "norm_label": "openclaw lxc fixed backup policy"
+    },
+    {
+      "label": "OpenClaw Foundry Plugin Install",
+      "file_type": "code",
+      "source_file": "setup-openclaw-lxc-foundry-plugin.yml",
+      "id": "ansible_setup_openclaw_lxc_foundry_plugin_playbook",
+      "community": 12,
+      "norm_label": "openclaw foundry plugin install"
+    },
+    {
+      "label": "OpenClaw AI LXC Deployment",
+      "file_type": "code",
+      "source_file": "setup-openclaw-lxc.yml",
+      "id": "ansible_setup_openclaw_lxc_playbook",
+      "community": 12,
+      "norm_label": "openclaw ai lxc deployment"
+    },
+    {
+      "label": "SSH Login Telegram Notifier",
+      "file_type": "code",
+      "source_file": "setup-ssh-login-telegram-alert.yml",
+      "id": "ansible_setup_ssh_login_telegram_alert_playbook",
+      "community": 16,
+      "norm_label": "ssh login telegram notifier"
+    },
+    {
+      "label": "Tailscale Mesh VPN Client",
+      "file_type": "code",
+      "source_file": "setup-tailscale-client.yml",
+      "id": "ansible_setup_tailscale_client_playbook",
+      "community": 19,
+      "norm_label": "tailscale mesh vpn client"
+    },
+    {
+      "label": "Xray/VLESS Client Scaffolding",
+      "file_type": "code",
+      "source_file": "setup-xray-client-docker.yml",
+      "id": "ansible_setup_xray_client_docker_playbook",
+      "community": 29,
+      "norm_label": "xray/vless client scaffolding"
+    },
+    {
+      "label": "Telegram Bot Alert Vault",
+      "file_type": "code",
+      "source_file": "group_vars/telegram-bot-alert_vault.yml",
+      "id": "ansible_group_vars_telegram_bot_alert_vault",
+      "community": 16,
+      "norm_label": "telegram bot alert vault"
+    },
+    {
+      "label": "Reverse SSH Tunneling Mechanism",
+      "file_type": "concept",
+      "source_file": "ostrov.md",
+      "rationale": "Enables remote access to machines behind multiple NATs by initiating an outbound connection to a public relay (priboi) which forwards incoming traffic back to the source.",
+      "id": "ansible_concept_reverse_ssh_tunnel",
+      "community": 9,
+      "norm_label": "reverse ssh tunneling mechanism"
+    },
+    {
+      "label": "OpenClaw Lifecycle Management",
+      "file_type": "concept",
+      "source_file": "setup-openclaw-lxc.yml",
+      "rationale": "Supports both Docker and LXC deployment patterns for the OpenClaw AI framework, including automated backups and plugin management.",
+      "id": "ansible_concept_openclaw_orchestration",
+      "community": 22,
+      "norm_label": "openclaw lifecycle management"
+    }
+  ],
+  "links": [
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L82",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_awg_config",
+      "target": "scripts_import_awg_config_build_awg_block"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L156",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_awg_config",
+      "target": "scripts_import_awg_config_main"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L32",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_awg_config",
+      "target": "scripts_import_awg_config_parse_args"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L145",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_awg_config",
+      "target": "scripts_import_awg_config_replace_awg_block"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L66",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_awg_config",
+      "target": "scripts_import_awg_config_split_csv"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L77",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_awg_config",
+      "target": "scripts_import_awg_config_yaml_list"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L72",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_awg_config",
+      "target": "scripts_import_awg_config_yaml_quote"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L157",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_awg_config_main",
+      "target": "scripts_import_awg_config_parse_args"
+    },
+    {
+      "relation": "references",
+      "context": "return_type",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L32",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_awg_config_parse_args",
+      "target": "namespace"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L90",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_awg_config_build_awg_block",
+      "target": "scripts_import_awg_config_split_csv"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L112",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_awg_config_build_awg_block",
+      "target": "scripts_import_awg_config_yaml_quote"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L105",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_awg_config_build_awg_block",
+      "target": "scripts_import_awg_config_yaml_list"
+    },
+    {
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L82",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_awg_config_build_awg_block",
+      "target": "sectionproxy"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L167",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_awg_config_main",
+      "target": "scripts_import_awg_config_build_awg_block"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/import-awg-config.py",
+      "source_location": "L177",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_awg_config_main",
+      "target": "scripts_import_awg_config_replace_awg_block"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source": "ansible_openclaw_operations_document",
+      "target": "scripts_openclaw_lxc_fixed_backup"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/openclaw-lxc-fixed-backup.sh",
+      "source_location": "L89",
+      "weight": 1.0,
+      "context": "call",
+      "confidence_score": 1.0,
+      "source": "scripts_openclaw_lxc_fixed_backup",
+      "target": "scripts_openclaw_lxc_fixed_backup_create_archive"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/openclaw-lxc-fixed-backup.sh",
+      "source_location": "L16",
+      "weight": 1.0,
+      "context": "call",
+      "confidence_score": 1.0,
+      "source": "scripts_openclaw_lxc_fixed_backup",
+      "target": "scripts_openclaw_lxc_fixed_backup_usage"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "scripts/openclaw-lxc-fixed-backup.sh",
+      "source": "scripts_openclaw_lxc_fixed_backup",
+      "target": "scripts_openclaw_lxc_fixed_restore"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source": "ansible_openclaw_operations_document",
+      "target": "scripts_openclaw_lxc_fixed_restore"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/openclaw-lxc-fixed-restore.sh",
+      "source_location": "L10",
+      "weight": 1.0,
+      "context": "call",
+      "confidence_score": 1.0,
+      "source": "scripts_openclaw_lxc_fixed_restore",
+      "target": "scripts_openclaw_lxc_fixed_restore_usage"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L71",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn",
+      "target": "scripts_parse_amnezia_vpn_build_summary"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L18",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn",
+      "target": "scripts_parse_amnezia_vpn_decode_export"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L47",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn",
+      "target": "scripts_parse_amnezia_vpn_extract_xray_config"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L13",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn",
+      "target": "scripts_parse_amnezia_vpn_fail"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L118",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn",
+      "target": "scripts_parse_amnezia_vpn_main"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L74",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn_build_summary",
+      "target": "scripts_parse_amnezia_vpn_fail"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L20",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn_decode_export",
+      "target": "scripts_parse_amnezia_vpn_fail"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L50",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn_extract_xray_config",
+      "target": "scripts_parse_amnezia_vpn_fail"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L120",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn_main",
+      "target": "scripts_parse_amnezia_vpn_fail"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L127",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn_main",
+      "target": "scripts_parse_amnezia_vpn_decode_export"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L128",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn_main",
+      "target": "scripts_parse_amnezia_vpn_extract_xray_config"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/parse-amnezia-vpn.py",
+      "source_location": "L129",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_parse_amnezia_vpn_main",
+      "target": "scripts_parse_amnezia_vpn_build_summary"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index",
+      "target": "ai_index_ai_agent_index_ansible_repository"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L182",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_ai_agent_index_ansible_repository",
+      "target": "ai_index_common_tasks_quick_reference"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L232",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_ai_agent_index_ansible_repository",
+      "target": "ai_index_dependencies_between_files"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L82",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_ai_agent_index_ansible_repository",
+      "target": "ai_index_file_reference_map"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L165",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_ai_agent_index_ansible_repository",
+      "target": "ai_index_inventory_groups"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L256",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_ai_agent_index_ansible_repository",
+      "target": "ai_index_notes_for_ai_agents"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_ai_agent_index_ansible_repository",
+      "target": "ai_index_quick_variable_reference"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L213",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_ai_agent_index_ansible_repository",
+      "target": "ai_index_variable_search_patterns"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L72",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_quick_variable_reference",
+      "target": "ai_index_cockpit_variables"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L37",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_quick_variable_reference",
+      "target": "ai_index_openclaw_backup_variables"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L19",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_quick_variable_reference",
+      "target": "ai_index_openclaw_core_variables"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L45",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_quick_variable_reference",
+      "target": "ai_index_openclaw_lxc_specific_variables"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L67",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_quick_variable_reference",
+      "target": "ai_index_openclaw_non_secret_defaults"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L58",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_quick_variable_reference",
+      "target": "ai_index_openclaw_secrets_vault"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L7",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_quick_variable_reference",
+      "target": "ai_index_user_management_variables"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L84",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_file_reference_map",
+      "target": "ai_index_configuration_files"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L91",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_file_reference_map",
+      "target": "ai_index_group_variables"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L100",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_file_reference_map",
+      "target": "ai_index_playbooks_by_category"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L157",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_file_reference_map",
+      "target": "ai_index_scripts"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L137",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_file_reference_map",
+      "target": "ai_index_templates"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L102",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_playbooks_by_category",
+      "target": "ai_index_bootstrap_playbooks"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L131",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_playbooks_by_category",
+      "target": "ai_index_nginx_sites"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L122",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_playbooks_by_category",
+      "target": "ai_index_openclaw_deployment"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L114",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_playbooks_by_category",
+      "target": "ai_index_service_setup"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L109",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_playbooks_by_category",
+      "target": "ai_index_user_management"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L184",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_common_tasks_quick_reference",
+      "target": "ai_index_add_new_sudo_user"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L192",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_common_tasks_quick_reference",
+      "target": "ai_index_bootstrap_new_server_password"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L206",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_common_tasks_quick_reference",
+      "target": "ai_index_deploy_openclaw_docker"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L199",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_common_tasks_quick_reference",
+      "target": "ai_index_deploy_openclaw_lxc"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L225",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_variable_search_patterns",
+      "target": "ai_index_find_vault_encrypted_variables"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L215",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_variable_search_patterns",
+      "target": "ai_index_find_where_variable_is_defined"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AI_INDEX.md",
+      "source_location": "L220",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ai_index_variable_search_patterns",
+      "target": "ai_index_find_where_variable_is_used"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CONTEXT_INDEX.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "context_index",
+      "target": "context_index_\u0438\u043d\u0434\u0435\u043a\u0441_\u043a\u043e\u043d\u0442\u0435\u043a\u0441\u0442\u0430_ansible_\u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u0439"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CONTEXT_INDEX.md",
+      "source_location": "L121",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "context_index_\u0438\u043d\u0434\u0435\u043a\u0441_\u043a\u043e\u043d\u0442\u0435\u043a\u0441\u0442\u0430_ansible_\u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u0439",
+      "target": "context_index_certbot_\u043d\u0430_rif_u22_ger_\u0442\u0435\u043a\u0443\u0449\u0430\u044f_\u0441\u0445\u0435\u043c\u0430"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CONTEXT_INDEX.md",
+      "source_location": "L16",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "context_index_\u0438\u043d\u0434\u0435\u043a\u0441_\u043a\u043e\u043d\u0442\u0435\u043a\u0441\u0442\u0430_ansible_\u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u0439",
+      "target": "context_index_\u0438\u043d\u0432\u0435\u043d\u0442\u0430\u0440\u044c"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CONTEXT_INDEX.md",
+      "source_location": "L138",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "context_index_\u0438\u043d\u0434\u0435\u043a\u0441_\u043a\u043e\u043d\u0442\u0435\u043a\u0441\u0442\u0430_ansible_\u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u0439",
+      "target": "context_index_\u043a\u043e\u043c\u0430\u043d\u0434\u044b_\u0437\u0430\u043f\u0443\u0441\u043a\u0430_\u0438\u0437_readme"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CONTEXT_INDEX.md",
+      "source_location": "L12",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "context_index_\u0438\u043d\u0434\u0435\u043a\u0441_\u043a\u043e\u043d\u0442\u0435\u043a\u0441\u0442\u0430_ansible_\u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u0439",
+      "target": "context_index_\u043a\u043e\u043d\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u044f_ansible"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CONTEXT_INDEX.md",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "context_index_\u0438\u043d\u0434\u0435\u043a\u0441_\u043a\u043e\u043d\u0442\u0435\u043a\u0441\u0442\u0430_ansible_\u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u0439",
+      "target": "context_index_\u043e\u0431\u0437\u043e\u0440_\u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u044f"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CONTEXT_INDEX.md",
+      "source_location": "L154",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "context_index_\u0438\u043d\u0434\u0435\u043a\u0441_\u043a\u043e\u043d\u0442\u0435\u043a\u0441\u0442\u0430_ansible_\u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u0439",
+      "target": "context_index_\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u043e\u043d\u043d\u044b\u0435_\u0437\u0430\u043c\u0435\u0442\u043a\u0438"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CONTEXT_INDEX.md",
+      "source_location": "L20",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "context_index_\u0438\u043d\u0434\u0435\u043a\u0441_\u043a\u043e\u043d\u0442\u0435\u043a\u0441\u0442\u0430_ansible_\u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u0439",
+      "target": "context_index_\u043f\u0435\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CONTEXT_INDEX.md",
+      "source_location": "L52",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "context_index_\u0438\u043d\u0434\u0435\u043a\u0441_\u043a\u043e\u043d\u0442\u0435\u043a\u0441\u0442\u0430_ansible_\u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u0439",
+      "target": "context_index_\u043f\u043b\u0435\u0439\u0431\u0443\u043a\u0438"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CONTEXT_INDEX.md",
+      "source_location": "L163",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "context_index_\u0438\u043d\u0434\u0435\u043a\u0441_\u043a\u043e\u043d\u0442\u0435\u043a\u0441\u0442\u0430_ansible_\u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u0439",
+      "target": "context_index_\u0447\u0443\u0432\u0441\u0442\u0432\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435_\u0434\u0430\u043d\u043d\u044b\u0435"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openclaw_operations",
+      "target": "openclaw_operations_\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u043e\u043d\u043d\u0430\u044f_\u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u0446\u0438\u044f_openclaw"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L143",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openclaw_operations_\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u043e\u043d\u043d\u0430\u044f_\u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u0446\u0438\u044f_openclaw",
+      "target": "openclaw_operations_ssh_\u0442\u0443\u043d\u043d\u0435\u043b\u044c_\u0434\u043b\u044f_gateway_http_ws"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openclaw_operations_\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u043e\u043d\u043d\u0430\u044f_\u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u0446\u0438\u044f_openclaw",
+      "target": "openclaw_operations_\u0430\u043a\u0442\u0443\u0430\u043b\u044c\u043d\u043e_lxc_workflow_ubuntu_22"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L161",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openclaw_operations_\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u043e\u043d\u043d\u0430\u044f_\u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u0446\u0438\u044f_openclaw",
+      "target": "openclaw_operations_\u0434\u0435\u043f\u043b\u043e\u0439_\u0438_\u043f\u0435\u0440\u0435\u043a\u043e\u043d\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u044f"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L199",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openclaw_operations_\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u043e\u043d\u043d\u0430\u044f_\u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u0446\u0438\u044f_openclaw",
+      "target": "openclaw_operations_\u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u0435_\u0432\u0435\u0440\u0441\u0438\u0438_openclaw_\u0432\u0440\u0443\u0447\u043d\u0443\u044e"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L93",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openclaw_operations_\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u043e\u043d\u043d\u0430\u044f_\u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u0446\u0438\u044f_openclaw",
+      "target": "openclaw_operations_\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u0438_\u0431\u044d\u043a\u0430\u043f\u0430"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L121",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openclaw_operations_\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u043e\u043d\u043d\u0430\u044f_\u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u0446\u0438\u044f_openclaw",
+      "target": "openclaw_operations_\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u0438_\u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u044f"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L75",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openclaw_operations_\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u043e\u043d\u043d\u0430\u044f_\u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u0446\u0438\u044f_openclaw",
+      "target": "openclaw_operations_\u043f\u0443\u0442\u0438_\u043d\u0430_\u0445\u043e\u0441\u0442\u0435"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L172",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openclaw_operations_\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u043e\u043d\u043d\u0430\u044f_\u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u0446\u0438\u044f_openclaw",
+      "target": "openclaw_operations_\u0440\u0443\u0447\u043d\u0430\u044f_\u0440\u0430\u0431\u043e\u0442\u0430_\u0441\u043e_skills_\u0447\u0435\u0440\u0435\u0437_ssh"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L85",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openclaw_operations_\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u043e\u043d\u043d\u0430\u044f_\u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u0446\u0438\u044f_openclaw",
+      "target": "openclaw_operations_\u0441\u0438\u0441\u0442\u0435\u043c\u0430_\u0431\u044d\u043a\u0430\u043f\u043e\u0432"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L223",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openclaw_operations_\u043e\u043f\u0435\u0440\u0430\u0446\u0438\u043e\u043d\u043d\u0430\u044f_\u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u0446\u0438\u044f_openclaw",
+      "target": "openclaw_operations_\u0443\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435_\u043a\u043e\u043d\u0442\u0435\u0439\u043d\u0435\u0440\u043e\u043c_openclaw"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L53",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openclaw_operations_\u0430\u043a\u0442\u0443\u0430\u043b\u044c\u043d\u043e_lxc_workflow_ubuntu_22",
+      "target": "openclaw_operations_fixed_backup_restore_lxc"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L33",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openclaw_operations_\u0430\u043a\u0442\u0443\u0430\u043b\u044c\u043d\u043e_lxc_workflow_ubuntu_22",
+      "target": "openclaw_operations_telegram_allowlist"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L24",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openclaw_operations_\u0430\u043a\u0442\u0443\u0430\u043b\u044c\u043d\u043e_lxc_workflow_ubuntu_22",
+      "target": "openclaw_operations_\u0431\u044b\u0441\u0442\u0440\u044b\u0435_post_check_\u043a\u043e\u043c\u0430\u043d\u0434\u044b_lxc"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L39",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openclaw_operations_\u0430\u043a\u0442\u0443\u0430\u043b\u044c\u043d\u043e_lxc_workflow_ubuntu_22",
+      "target": "openclaw_operations_\u0432\u0430\u0436\u043d\u043e_\u043f\u043e_\u0437\u0430\u043f\u0443\u0441\u043a\u0443_\u043f\u043b\u0435\u0439\u0431\u0443\u043a\u043e\u0432"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L16",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openclaw_operations_\u0430\u043a\u0442\u0443\u0430\u043b\u044c\u043d\u043e_lxc_workflow_ubuntu_22",
+      "target": "openclaw_operations_\u0432\u0430\u0436\u043d\u044b\u0435_\u043f\u0443\u0442\u0438_lxc"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "OPENCLAW_OPERATIONS.md",
+      "source_location": "L43",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "openclaw_operations_\u0430\u043a\u0442\u0443\u0430\u043b\u044c\u043d\u043e_lxc_workflow_ubuntu_22",
+      "target": "openclaw_operations_\u0447\u0430\u0441\u0442\u0430\u044f_\u043f\u0440\u043e\u0431\u043b\u0435\u043c\u0430_\u043d\u0430_\u0445\u043e\u0441\u0442\u0430\u0445_\u0441_docker"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "ostrov.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ostrov",
+      "target": "ostrov_ostrov"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "ostrov.md",
+      "source_location": "L19",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ostrov_ostrov",
+      "target": "ostrov_systemd_unit_\u043d\u0430_ostrov"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "ostrov.md",
+      "source_location": "L39",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ostrov_ostrov",
+      "target": "ostrov_\u0432\u0430\u0436\u043d\u044b\u0435_\u0434\u0435\u0442\u0430\u043b\u0438"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "ostrov.md",
+      "source_location": "L46",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ostrov_ostrov",
+      "target": "ostrov_\u043a\u0430\u043a_\u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0430\u0442\u044c\u0441\u044f_\u0432\u0440\u0443\u0447\u043d\u0443\u044e"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "ostrov.md",
+      "source_location": "L65",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ostrov_ostrov",
+      "target": "ostrov_\u043a\u0430\u043a_\u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0442_ansible"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "ostrov.md",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ostrov_ostrov",
+      "target": "ostrov_\u0441\u0445\u0435\u043c\u0430_\u0434\u043e\u0441\u0442\u0443\u043f\u0430"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "ostrov.md",
+      "source_location": "L95",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "ostrov_ostrov",
+      "target": "ostrov_\u0447\u0442\u043e_\u043d\u0435\u043b\u044c\u0437\u044f_\u0437\u0430\u0431\u044b\u0432\u0430\u0442\u044c"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".gemini/settings.json",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "gemini_settings",
+      "target": "gemini_settings_hooks",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".gemini/settings.json",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "gemini_settings_hooks",
+      "target": "gemini_settings_hooks_beforetool",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/import-awg-config.py",
+      "source": "scripts_import_awg_config_script",
+      "target": "group_vars_ostrov_vars"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AI_INDEX.md",
+      "source": "ansible_ai_index_document",
+      "target": "ansible_add_new_sudouser_playbook"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "AI_INDEX.md",
+      "source": "ansible_ai_index_document",
+      "target": "ansible_context_index_document"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AI_INDEX.md",
+      "source": "ansible_ai_index_document",
+      "target": "group_vars_all_vars"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "bootstrap-1-ssh-key-to-root-add-new-sudouser.yml",
+      "source": "ansible_bootstrap_1_ssh_key_to_root_add_new_sudouser_playbook",
+      "target": "ansible_bootstrap_2_remove_root_access_playbook"
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "bootstrap-1-ssh-key-to-root-add-new-sudouser.yml",
+      "source": "ansible_bootstrap_1_ssh_key_to_root_add_new_sudouser_playbook",
+      "target": "group_vars_all_vars"
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "bootstrap-2-remove-root-access.yml",
+      "source": "ansible_bootstrap_2_remove_root_access_playbook",
+      "target": "group_vars_bootstrap_vars"
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "config-nginx-docker.yml",
+      "source": "ansible_config_nginx_docker_playbook",
+      "target": "group_vars_servers_vars"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "group_vars/ostrov.yml",
+      "source": "group_vars_ostrov_vars",
+      "target": "group_vars_ostrov_lxc_vars"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "ostrov.md",
+      "source": "ansible_ostrov_doc",
+      "target": "ansible_concept_reverse_ssh_tunnel"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "setup-couchdb-ostrov.yml",
+      "source": "ansible_setup_couchdb_ostrov_playbook",
+      "target": "ansible_ostrov_doc"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "setup-nginx-docker-volna-ovh.yml",
+      "source": "ansible_setup_nginx_docker_volna_ovh_playbook",
+      "target": "ansible_setup_all_settings_volna_ovh_playbook"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "setup-awg-client-lxc.yml",
+      "source": "ansible_setup_awg_client_lxc_playbook",
+      "target": "ansible_setup_awg_client_playbook"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "setup-fail2ban.yml",
+      "source": "ansible_setup_fail2ban_playbook",
+      "target": "ansible_setup_cockpit_playbook"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "setup-fail2ban.yml",
+      "source": "ansible_setup_fail2ban_playbook",
+      "target": "ansible_setup_couchdb_ostrov_playbook"
+    },
+    {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "setup-tailscale-client.yml",
+      "source": "ansible_setup_tailscale_client_playbook",
+      "target": "ansible_setup_headscale_derp_docker_playbook"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "setup-lxc-ostrov.yml",
+      "source": "ansible_setup_lxc_ostrov_playbook",
+      "target": "ansible_concept_reverse_ssh_tunnel"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "setup-openclaw-lxc-fixed-backup.yml",
+      "source": "ansible_setup_openclaw_lxc_fixed_backup_playbook",
+      "target": "ansible_setup_openclaw_lxc_playbook"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "setup-openclaw-lxc-foundry-plugin.yml",
+      "source": "ansible_setup_openclaw_lxc_foundry_plugin_playbook",
+      "target": "ansible_setup_openclaw_lxc_playbook"
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "setup-ssh-login-telegram-alert.yml",
+      "source": "ansible_setup_ssh_login_telegram_alert_playbook",
+      "target": "ansible_group_vars_telegram_bot_alert_vault"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "openclaw_lxc_backup_mechanism",
+      "label": "OpenClaw LXC Fixed Backup Mechanism",
+      "nodes": [
+        "scripts_openclaw_lxc_fixed_backup_script",
+        "scripts_openclaw_lxc_fixed_restore_script",
+        "ansible_openclaw_operations_document"
+      ],
+      "relation": "form",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "OPENCLAW_OPERATIONS.md"
+    },
+    {
+      "id": "server_bootstrap_flow",
+      "label": "Initial Server Bootstrap Workflow",
+      "nodes": [
+        "ansible_bootstrap_1_ssh_key_to_root_add_new_sudouser_playbook",
+        "ansible_bootstrap_2_remove_root_access_playbook",
+        "group_vars_bootstrap_vars"
+      ],
+      "relation": "implement",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "bootstrap-1-ssh-key-to-root-add-new-sudouser.yml"
+    },
+    {
+      "id": "ansible_openclaw_ecosystem",
+      "label": "OpenClaw Deployment & Maintenance",
+      "nodes": [
+        "ansible_setup_openclaw_docker_playbook",
+        "ansible_setup_openclaw_lxc_playbook",
+        "ansible_setup_openclaw_lxc_fixed_backup_playbook",
+        "ansible_setup_openclaw_lxc_foundry_plugin_playbook"
+      ],
+      "relation": "implement",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "setup-openclaw-lxc.yml"
+    },
+    {
+      "id": "ansible_secure_tunneling_stack",
+      "label": "Secure Tunneling & VPN Infrastructure",
+      "nodes": [
+        "ansible_setup_awg_client_playbook",
+        "ansible_setup_tailscale_client_playbook",
+        "ansible_setup_xray_client_docker_playbook",
+        "ansible_setup_mtproto_docker_playbook",
+        "ansible_setup_derper_playbook",
+        "ansible_setup_headscale_derp_docker_playbook"
+      ],
+      "relation": "form",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "setup-headscale-derp-docker.yml"
+    },
+    {
+      "id": "ansible_ostrov_access_topology",
+      "label": "Ostrov Connectivity Topology",
+      "nodes": [
+        "ansible_ostrov_doc",
+        "ansible_setup_lxc_ostrov_playbook",
+        "ansible_concept_reverse_ssh_tunnel"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "ostrov.md"
+    }
+  ],
+  "built_at_commit": "55350671152c4e83f1fb24f0729f310a8dc1195b"
+}

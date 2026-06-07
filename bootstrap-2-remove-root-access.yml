@@ -9,7 +9,9 @@
     ansible_become: true
     ansible_become_method: sudo
     ansible_become_user: root
-    ansible_remote_tmp: "/home/{{ new_user }}/.ansible/tmp"
+    # Reuse the shared tmp dir from ansible.cfg/bootstrap-1 so become+sudo
+    # does not depend on the new user's home directory permissions.
+    ansible_remote_tmp: "/var/tmp/ansible-tmp"
     ansible_ssh_common_args: "-o PreferredAuthentications=publickey -o PasswordAuthentication=no -o KbdInteractiveAuthentication=no -o IdentitiesOnly=yes"
     sshd_config_path: /etc/ssh/sshd_config
     sshd_hardening_dropin_path: /etc/ssh/sshd_config.d/00-ansible-hardening.conf

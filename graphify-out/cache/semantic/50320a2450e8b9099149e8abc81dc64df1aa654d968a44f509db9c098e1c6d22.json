@@ -1,0 +1,1 @@
+{"nodes": [{"id": "ansible_cleanup_openclaw_docker_backup_playbook", "label": "Cleanup OpenClaw Docker Stack", "file_type": "code", "source_file": "cleanup-openclaw-docker-backup.yml"}], "edges": [], "hyperedges": []}

@@ -1,0 +1,53 @@
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "dns": {
+    "servers": {{ xray_client_dns_servers | to_json }}
+  },
+  "inbounds": [
+    {
+      "tag": "socks-in",
+      "listen": "0.0.0.0",
+      "port": {{ xray_client_socks_port }},
+      "protocol": "socks",
+      "settings": {
+        "udp": true
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "to-rif",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "{{ xray_client_parsed_json.address | default('REPLACE_WITH_RIF_HOST') }}",
+            "port": {{ xray_client_parsed_json.port | default(8443) }},
+            "users": [
+              {
+                "id": "{{ xray_client_parsed_json.id | default('REPLACE_WITH_UUID') }}",
+{% if (xray_client_parsed_json.flow | default('') | length) > 0 %}
+                "flow": "{{ xray_client_parsed_json.flow }}",
+{% endif %}
+                "encryption": "{{ xray_client_parsed_json.encryption | default('none') }}"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "{{ xray_client_parsed_json.network | default('tcp') }}",
+        "security": "{{ xray_client_parsed_json.security | default('reality') }}",
+        "realitySettings": {
+          "fingerprint": "{{ xray_client_parsed_json.fingerprint | default('chrome') }}",
+          "serverName": "{{ xray_client_parsed_json.serverName | default('REPLACE_WITH_SERVER_NAME') }}",
+          "publicKey": "{{ xray_client_parsed_json.publicKey | default('REPLACE_WITH_PUBLIC_KEY') }}",
+          "shortId": "{{ xray_client_parsed_json.shortId | default('REPLACE_WITH_SHORT_ID') }}",
+          "spiderX": "{{ xray_client_parsed_json.spiderX | default('') }}"
+        }
+      }
+    }
+  ]
+}

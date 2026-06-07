@@ -1,0 +1,1 @@
+{"nodes": [{"id": "ansible_gemini_document", "label": "Gemini Knowledge Graph Rules", "file_type": "document", "source_file": "GEMINI.md", "rationale": "Rules for using the graphify-powered knowledge graph for codebase navigation."}], "edges": [], "hyperedges": []}
